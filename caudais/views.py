@@ -1454,7 +1454,7 @@ def dashboard(request):
                 # Nada necessario, ja nao metemos o grafico de linhas instantaneas
                 pass
 
-    month_names=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+    month_names=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
     
     # Gaps
     gap_table_rows = []
@@ -1521,6 +1521,7 @@ def dashboard(request):
     }
 
     return render(request, 'caudais/dashboard.html', context)
+
 
 
 @login_required(login_url='/autenticacao/login/')
@@ -1723,6 +1724,148 @@ def obter_series_por_ponto(request):
 
 
 @login_required(login_url='/autenticacao/login/')
+def exportar_excel(request):
+    serie_ids = request.GET.getlist('serie_ids')
+    serie_id = request.GET.get('serie_id')  
+    data_type = request.GET.get('data_type', 'raw')
+    metodo = request.GET.get('recon_method', 'jq')
+    
+    
+    series_years = {}
+    for param_name, param_values in request.GET.lists():
+        if param_name.startswith('years_') and param_values:
+            try:
+                serie_id_from_param = param_name.replace('years_', '')
+                selected_years = [int(year) for year in param_values if year]
+                if selected_years:
+                    series_years[serie_id_from_param] = selected_years
+            except ValueError:
+                pass
+
+    if serie_id and not serie_ids:
+        serie_ids = [serie_id]
+
+    if not serie_ids:
+        return HttpResponse("Série não especificada.", status=400)
+
+    try:
+        series = [Serie.objects.get(id=sid) for sid in serie_ids if sid]
+    except Serie.DoesNotExist:
+        return HttpResponse("Série inválida.", status=404)
+
+    if len(series) == 1:
+        
+        serie = series[0]
+        
+        
+        year_filter = None
+        if str(serie.id) in series_years:
+            year_filter = series_years[str(serie.id)]
+        
+        if data_type == 'raw':
+            queryset = Medicao.objects.filter(serie=serie)
+            if year_filter:
+                queryset = queryset.filter(timestamp__year__in=year_filter)
+            queryset = queryset.values('timestamp', 'valor')
+        elif data_type == 'normalized':
+            queryset = MedicaoProcessada.objects.filter(serie=serie, metodo='normalized')
+            if year_filter:
+                queryset = queryset.filter(timestamp__year__in=year_filter)
+            queryset = queryset.values('timestamp', 'valor')
+        elif data_type == 'reconstruido':
+            queryset = MedicaoProcessada.objects.filter(serie=serie, metodo=metodo)
+            if year_filter:
+                queryset = queryset.filter(timestamp__year__in=year_filter)
+            queryset = queryset.values('timestamp', 'valor')
+        else:
+            return HttpResponse("Tipo de dado inválido.", status=400)
+
+        df = pd.DataFrame(list(queryset))
+        if df.empty:
+            return HttpResponse("Sem dados para exportar.", status=204)
+
+        df['timestamp'] = pd.to_datetime(df['timestamp']).dt.tz_localize(None)
+        df = df.sort_values(by='timestamp')
+        df.rename(columns={'timestamp': 'Data', 'valor': 'Caudal'}, inplace=True)
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+        if data_type == "reconstruido":
+            filename_year = f"_{'_'.join(map(str, year_filter))}" if year_filter else ""
+            nome_arquivo = f"medicoes_{data_type}_{metodo}_{serie.nome}{filename_year}.xlsx"
+        else:
+            filename_year = f"_{'_'.join(map(str, year_filter))}" if year_filter else ""
+            nome_arquivo = f"medicoes_{data_type}_{serie.nome}{filename_year}.xlsx"
+
+        response['Content-Disposition'] = f'attachment; filename="{nome_arquivo}"'
+
+        with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
+            df.to_excel(writer, index=False, sheet_name='Medições')
+
+        return response
+    
+    else:
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        
+        
+        years_str = ""
+        if series_years:
+            all_years = []
+            for years_list in series_years.values():
+                all_years.extend(years_list)
+            unique_years = sorted(set(all_years))
+            years_str = f"_anos{'_'.join(map(str, unique_years))}"
+        
+        if data_type == "reconstruido":
+            nome_arquivo = f"comparacao_{data_type}_{metodo}_series{years_str}.xlsx"
+        else:
+            nome_arquivo = f"comparacao_{data_type}_series{years_str}.xlsx"
+            
+        response['Content-Disposition'] = f'attachment; filename="{nome_arquivo}"'
+
+        with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
+            for serie in series:
+                
+                year_filter = None
+                if str(serie.id) in series_years:
+                    year_filter = series_years[str(serie.id)]
+                
+                if data_type == 'raw':
+                    queryset = Medicao.objects.filter(serie=serie)
+                    if year_filter:
+                        queryset = queryset.filter(timestamp__year__in=year_filter)
+                    queryset = queryset.values('timestamp', 'valor')
+                elif data_type == 'normalized':
+                    queryset = MedicaoProcessada.objects.filter(serie=serie, metodo='normalized')
+                    if year_filter:
+                        queryset = queryset.filter(timestamp__year__in=year_filter)
+                    queryset = queryset.values('timestamp', 'valor')
+                elif data_type == 'reconstruido':
+                    queryset = MedicaoProcessada.objects.filter(serie=serie, metodo=metodo)
+                    if year_filter:
+                        queryset = queryset.filter(timestamp__year__in=year_filter)
+                    queryset = queryset.values('timestamp', 'valor')
+                else:
+                    continue
+
+                df = pd.DataFrame(list(queryset))
+                if not df.empty:
+                    df['timestamp'] = pd.to_datetime(df['timestamp']).dt.tz_localize(None)
+                    df = df.sort_values(by='timestamp')
+                    
+                    
+                    year_suffix = f"_{'_'.join(map(str, year_filter))}" if year_filter else ""
+                    df.rename(columns={'timestamp': 'Data', 'valor': f'Caudal'}, inplace=True)
+                    
+                    
+                    sheet_name_year = f"_{'_'.join(map(str, year_filter))}" if year_filter else ""
+                    sheet_name = f"Serie_{serie.id}_{serie.nome}{sheet_name_year}"[:31]  
+                    df.to_excel(writer, index=False, sheet_name=sheet_name)
+
+        return response
+
+
+@login_required(login_url='/autenticacao/login/')
 def dashboard_comparison(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Invalid request method'}, status=405)
@@ -1799,6 +1942,7 @@ def dashboard_comparison(request):
         
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
 
 def get_anos_por_serie(request):
     serie_id = request.GET.get("serie_id")
