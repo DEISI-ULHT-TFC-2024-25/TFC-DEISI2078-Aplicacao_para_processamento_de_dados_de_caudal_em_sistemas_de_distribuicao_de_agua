@@ -73,7 +73,7 @@ DATABASES = {
 
 # Autenticacao
 LOGIN_URL = '/autenticacao/login/'
-LOGIN_REDIRECT_URL = '/caudais/dashboard/'
+LOGIN_REDIRECT_URL = '/caudais/'
 LOGOUT_REDIRECT_URL = '/autenticacao/login/'
 
 # Password validation

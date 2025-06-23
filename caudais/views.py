@@ -30,6 +30,68 @@ import base64
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.platypus import Table, TableStyle
+import uuid
+import os
+
+def home(request):
+    
+    pontos_medicao = PontoMedida.objects.select_related('regiao').all()
+    monitoring_points = []
+
+    for ponto in pontos_medicao:
+        if not (ponto.latitude and ponto.longitude):
+            continue
+        all_series = ponto.serie.all()
+        total_measurements = 0
+        latest_measurement = None
+        latest_flow = "N/A"
+
+        for serie in all_series:
+            measurement_count = serie.medicoes.filter(valor__isnull=False).count()
+            total_measurements += measurement_count
+
+            latest = serie.medicoes.all().order_by('-timestamp').first()
+            if latest:
+                if not latest_measurement or latest.timestamp > latest_measurement.timestamp:
+                    latest_measurement = latest
+                    latest_flow = f"{latest.valor:.2f} m3/s" if latest.valor else "N/A"
+        if total_measurements == 0:
+            status = "low"
+        elif total_measurements < 100:
+            status = "medium"
+        else:
+            status = "high"
+
+        monitoring_points.append({
+            'id': ponto.id,
+            'name': f"{ponto.regiao.nome} - {ponto.regiao.localidade}",
+            "lat": float(ponto.latitude),
+            "lng": float(ponto.longitude),
+            "status": status,
+            "region": ponto.regiao.localidade,
+            "type": ponto.tipoMedidor,
+            "lastReading": latest_measurement.timestamp.strftime("%Y-%m-%d %H:%M") if latest_measurement else "N/A",
+            "flow": latest_flow,
+            "total_measurements": total_measurements 
+        })
+    
+    total_points = len(monitoring_points)
+    total_measurements_all = sum(p['total_measurements'] for p in monitoring_points)
+
+    context = {
+        'monitoring_points_json': json.dumps(monitoring_points),
+        'monitoring_points': monitoring_points,
+        'stats': {
+            'total_points': total_points,
+            'total_measurements': total_measurements_all
+        }
+    }
+
+    return render(request, 'caudais/home.html', context)
+
+def sobre(request):
+    return render(request, 'caudais/sobre.html')
+
 
 def calculate_boxplot_data(queryset, selected_serie=None, metodo='raw', selected_year=None, calcular=True):
     monthly_stats = {}
@@ -1392,7 +1454,7 @@ def dashboard(request):
                 # Nada necessario, ja nao metemos o grafico de linhas instantaneas
                 pass
 
-    month_names=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+    month_names=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
     
     # Gaps
     gap_table_rows = []
@@ -1593,7 +1655,7 @@ def exportar_excel(request):
                     
                     
                     year_suffix = f"_{'_'.join(map(str, year_filter))}" if year_filter else ""
-                    df.rename(columns={'timestamp': 'Data', 'valor': f'Caudal_{serie.nome}{year_suffix}'}, inplace=True)
+                    df.rename(columns={'timestamp': 'Data', 'valor': f'Caudal'}, inplace=True)
                     
                     
                     sheet_name_year = f"_{'_'.join(map(str, year_filter))}" if year_filter else ""

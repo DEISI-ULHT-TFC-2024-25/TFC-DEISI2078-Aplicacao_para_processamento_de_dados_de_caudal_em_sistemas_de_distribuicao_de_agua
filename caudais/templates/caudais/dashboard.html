@@ -30,7 +30,53 @@
               padding: 20px;
           }
   
-        
+          .dark-mode {
+              background-color: #1a1a1a;
+              color: #f1f1f1;
+          }
+  
+          .dark-mode .chart-container,
+          .dark-mode form,
+          .dark-mode table.small-table,
+          .dark-mode .dropdown-menu {
+              background-color: #2c2c2c;
+              color: #f1f1f1;
+          }
+  
+          .dark-mode table.small-table th {
+              background-color: #444;
+              color: #fff;
+          }
+  
+          .dark-mode .dropdown-menu a {
+              color: #f1f1f1;
+          }
+
+          .dark-mode .nav-bar {
+              background-color: #2c2c2c !important;
+              color: #f1f1f1 !important;
+          }
+
+          .dark-mode .nav-bar a {
+              color: #94a3b8 !important;
+          }
+
+          .dark-mode .nav-bar a:hover {
+              color: #0077b6 !important;
+          }
+
+          .dark-mode form {
+              background-color: #2c2c2c;
+              color: #f1f1f1;
+          }
+
+          .dark-mode .form-group {
+              color: #f1f1f1;
+          }
+
+          .dark-mode input[type="checkbox"] {
+              accent-color: var(--azul-primario);
+          }
   
           h1 {
               text-align: center;
@@ -75,6 +121,10 @@
               font-size: 14px;
               color: var(--cinza-escuro);
           }
+
+          .dark-mode label {
+              color: #f1f1f1;
+          }
   
           select, button, input[type="checkbox"] {
               padding: 8px 12px;
@@ -83,6 +133,17 @@
               font-size: 14px;
               min-height: 36px;
               box-sizing: border-box;
+          }
+
+          .dark-mode select {
+              background-color: #2c2c2c;
+              border-color: #555;
+              color: #f1f1f1;
+          }
+
+          .dark-mode select option {
+              background-color: #2c2c2c;
+              color: #f1f1f1;
           }
   
           input[type="checkbox"] {
@@ -113,6 +174,12 @@
               min-height: 36px;
               box-sizing: border-box;
           }
+
+          .dark-mode #series_checkboxes {
+              background: #2c2c2c;
+              border-color: #555;
+              color: #f1f1f1;
+          }
   
           #series_checkboxes div {
               margin-bottom: 3px;
@@ -131,6 +198,10 @@
               font-size: 13px;
               cursor: pointer;
               font-weight: normal;
+          }
+
+          .dark-mode #series_checkboxes label {
+              color: #f1f1f1;
           }
   
           button {
@@ -202,30 +273,45 @@
           }
   
           .menu-toggle {
-              position: fixed;
-              top: 20px;
-              left: 30px;
-              font-size: 23px;
+              background-color: var(--azul-primario);
+              color: white;
+              border: none;
+              border-radius: 8px;
+              width: 40px;
+              height: 40px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
               cursor: pointer;
+              font-size: 16px;
+              box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.2);
+              transition: background-color 0.3s ease;
               z-index: 2000;
-              
           }
   
           .menu-toggle i {
-              color: var(--cinza-escuro);
+              color: white;
           }
   
-        
+          .dark-mode .menu-toggle {
+              background-color: #2c2c2c;
+          }
+  
+          .dark-mode .menu-toggle i {
+              color: #f1f1f1;
+          }
+  
           .dropdown-menu {
               display: none;
-              position: fixed;
-              top: 60px;
-              left: 30px;
+              position: absolute;
+              top: 100%;
+              right: 0;
               background: white;
               border-radius: 8px;
               box-shadow: 0px 2px 10px rgba(0,0,0,0.1);
               z-index: 1000;
               min-width: 200px;
+              margin-top: 5px;
           }
   
           .dropdown-menu a {
@@ -342,6 +428,27 @@
               border-left: 3px solid #dc3545;
           }
 
+          .dark-mode #series_years_selectors .form-group {
+              background-color: #3c3c3c;
+              border-color: #555;
+          }
+
+          .dark-mode #series_years_selectors label {
+              color: #f1f1f1;
+          }
+
+          .dark-mode .years-grid {
+              background-color: #2c2c2c;
+              border-color: #555;
+          }
+
+          .dark-mode .year-checkbox-item label {
+              color: #f1f1f1;
+          }
+
+          .dark-mode .year-checkbox-item label {
+              color: #f1f1f1;
+          }
 
           .auto-fill-info {
               margin-bottom: 10px;
@@ -352,7 +459,10 @@
               color: #1565c0;
           }
 
-        
+          .dark-mode .auto-fill-info {
+              background-color: #2c3e50;
+              color: #74b9ff;
+          }
 
           @keyframes slideIn {
               from {
@@ -379,31 +489,54 @@
     {% load custom_filters %}
 </head>
 <body>
-    <h1>Dashboard de Medições</h1>
-
-    <!-- User Info -->
-    <div style="text-align: center; margin-bottom: 20px; color: var(--azul-primario);">
-        <i class="fas fa-user"></i> Bem-vindo, <strong>{{ request.user.username }}</strong>
-        {% if request.user.first_name %}
-            ({{ request.user.first_name }} {{ request.user.last_name }})
-        {% endif %}
+    <!-- Menu Toggle Button (fixed position with relative container for dropdown) -->
+    <div style="position: fixed; top: 20px; right: 20px; z-index: 2000; margin-top: -10px">
+        <div class="menu-toggle" onclick="toggleMenu()" style="position: relative;">
+            <i class="fas fa-bars"></i>
+        </div>
+        <!-- Menu Dropdown -->
+        <div class="dropdown-menu" id="dropdownMenu">
+            <a href="{% url 'caudais:upload_novo_ponto' %}"><i class="fas fa-upload"></i> Upload de Medições</a>
+            <a href="#" onclick="exportarExcel()"><i class="fas fa-file-excel"></i> Exportar para Excel</a>
+            <a href="#" onclick="exportarPDF()"><i class="fas fa-file-pdf"></i> Gerar Relatório (PDF)</a>
+            <a href="#" onclick="toggleTheme()"><i class="fas fa-adjust"></i> Alternar Modo Claro/Escuro</a>
+            <a href="{% url 'autenticacao:logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
     </div>
 
-    <!-- Botão de Menu -->
-    <div class="menu-toggle" onclick="toggleMenu()">
-        <i class="fas fa-bars"></i>
+    <!-- Navigation Bar -->
+    <div class="nav-bar" style="background: white; padding: 1rem 2rem; margin: -20px -20px 20px -20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 2rem; margin-left: 60px;">
+            <h1 style="margin: 0; color: var(--azul-primario); font-size: 1.5rem;">
+                <i class="fas fa-water" style="margin-right: 0.5rem;"></i>
+                Dashboard de Medições
+            </h1>
+            <nav style="display: flex; gap: 1.5rem;">
+                <a href="{% url 'caudais:home' %}" style="color: #4a5568; text-decoration: none; font-weight: 500; transition: color 0.3s ease;">
+                    <i class="fas fa-home" style="margin-right: 0.5rem;"></i>
+                    Início
+                </a>
+                <a href="{% url 'caudais:sobre' %}" style="color: #4a5568; text-decoration: none; font-weight: 500; transition: color 0.3s ease;">
+                    <i class="fas fa-info-circle" style="margin-right: 0.5rem;"></i>
+                    Sobre
+                </a>
+            </nav>
+        </div>
+        <div style="display: flex; align-items: center; gap: 1rem; margin-right: 45px">
+            <div style="color: var(--azul-primario); font-size: 0.9rem;">
+                <i class="fas fa-user"></i> 
+                <strong>{{ request.user.username }}</strong>
+                {% if request.user.first_name %}
+                    ({{ request.user.first_name }} {{ request.user.last_name }})
+                {% endif %}
+            </div>
+        </div>
     </div>
     <div id="loading-spinner" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); font-size:24px; color:#0077b6;">
         <i class="fas fa-spinner fa-spin"></i> Carregando...
     </div>
 
-    <!-- Menu Dropdown -->
-    <div class="dropdown-menu" id="dropdownMenu">
-        <a href="{% url 'caudais:upload_novo_ponto' %}"><i class="fas fa-upload"></i> Upload de Medições</a>
-        <a href="#" onclick="exportarExcel()"><i class="fas fa-file-excel"></i> Exportar para Excel</a>
-        <a href="#" onclick="exportarPDF()"><i class="fas fa-file-pdf"></i> Gerar Relatório (PDF)</a>
-        <a href="{% url 'autenticacao:logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a>
-    </div>
+
 
 
     <!-- FORMULÁRIO -->
@@ -620,9 +753,9 @@
     <div class="chart-container">
         <h2>
             {% if comparison_mode %}
-                Contagem De Entradas Mensal - Comparação
+                Contagem Mensal - Comparação
             {% else %}
-                Contagem De Entradas Mensal - Ano {{ selected_year }}
+                Contagem Mensal - Ano {{ selected_year }}
             {% endif %}
         </h2>
         
@@ -669,6 +802,7 @@
     {{ month_counts|json_script:"month-counts" }}
     {{ month_avg|json_script:"month-avg" }}
     {{ month_totals|json_script:"month-totals" }}
+    {{ month_names|json_script:"month-names" }}
     {{ selected_serie_ids|json_script:"selected-serie-ids" }}
     {{ boxplot_data|json_script:"boxplot-data" }}
     {{ line_chart_data|json_script:"line-chart-data" }}
@@ -714,7 +848,7 @@
         const monthCounts = JSON.parse(document.getElementById('month-counts').textContent || '[]');
         const monthAvg = JSON.parse(document.getElementById('month-avg').textContent || '[]');
         const monthTotals = JSON.parse(document.getElementById('month-totals').textContent || '[]');
-
+        const monthNames = JSON.parse(document.getElementById('month-names').textContent || '[]');
         
         const boxplotData = JSON.parse(document.getElementById('boxplot-data').textContent || '{}');
         const lineChartData = JSON.parse(document.getElementById('line-chart-data').textContent || '{}');
@@ -757,31 +891,9 @@
 //});
 //console.log("Total de valores:", linhaTemporalValoresT.length);
 //console.log("Número de valores null:", linhaTemporalValoresT.filter(v => v === null).length);
-        const getScalesOptions = () => {
-           
-            const color = '#000000';
-            return {
-                x: {
-                    beginAtZero: true,
-                    title: { display: true, text: 'Ano', color: color },
-                    ticks: { color: color }
-                },
-                y: {
-                    beginAtZero: true,
-                    position: 'left',
-                    title: { display: true, text: 'Total (L)', color: color },
-                    ticks: { color: color }
-                },
-                y1: {
-                    beginAtZero: true,
-                    position: 'right',
-                    grid: { drawOnChartArea: false },
-                    title: { display: true, text: 'Média (m³/s)', color: color },
-                    ticks: { color: color }
-                }
-            };
-        };
-
+            const isDark = document.body.classList.contains('dark-mode');
+            const textColor = isDark ?'#ffffff':'#000000';
+       
         
         const zoomConfigXY = {
             zoom: {
@@ -845,6 +957,9 @@
 
         
         function createYearlyTrendChart() {
+            const isDark = document.body.classList.contains('dark-mode');
+            const textColor = isDark ?'#ffffff':'#000000';
+
             const canvas = document.getElementById('yearlyChart');
             if (!canvas) return;
 
@@ -861,7 +976,27 @@
                 data: chartData,
                 options: {
                     responsive: true,
-                    scales: getScalesOptions(),
+                    scales: {
+                         x: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Ano', color: textColor },
+                    ticks: { color: textColor}
+                },
+                y: {
+                    beginAtZero: true,
+                    position: 'left',
+                    title: { display: true, text: 'Total (L)', color: textColor },
+                    ticks: { color: textColor }
+                },
+                y1: {
+                    beginAtZero: true,
+                    position: 'right',
+                    grid: { drawOnChartArea: false },
+                    title: { display: true, text: 'Média (m³/s)', color: textColor },
+                    ticks: { color: textColor
+                     }
+                }
+                    },
                     plugins: {
                         zoom: zoomConfigXY,
                         tooltip: { 
@@ -872,6 +1007,7 @@
                         legend: {
                             position: 'top',
                             labels: {
+                                color:textColor,
                                 usePointStyle: true,
                                 padding: 15
                             }
@@ -1187,8 +1323,11 @@ document.getElementById("serie_id").addEventListener("change", function () {
 
 
         let chartConfigs;
+        
 
         if (comparisonMode && Object.keys(seriesData).length > 0) {
+        const isDark = document.body.classList.contains('dark-mode');
+        const textColor = isDark ?'#ffffff':'#000000';
 
             chartConfigs = [
                 {
@@ -1203,13 +1342,13 @@ document.getElementById("serie_id").addEventListener("change", function () {
                             responsive: true,
                             scales: {
                                 x: {
-                                    title: { display: true, text: 'Mês', color:'#000000' },
-                                    ticks: { color:'#000000' }
+                                    title: { display: true, text: 'Mês', color: textColor },
+                                    ticks: { color: textColor }
                                 },
                                 y: {
                                     beginAtZero: true,
-                                    title: { display: true, text: 'Média (m³/s)', color:'#000000' },
-                                    ticks: { color: '#000000' }
+                                    title: { display: true, text: 'Média (m³/s)', color: textColor },
+                                    ticks: { color: textColor }
                                 }
                             },
                             plugins: {
@@ -1231,21 +1370,21 @@ document.getElementById("serie_id").addEventListener("change", function () {
                             responsive: true,
                             scales: {
                                 x: {
-                                    title: { display: true, text: 'Mês', color:'#000000' },
-                                    ticks: { color:'#000000' }
+                                    title: { display: true, text: 'Mês', color: textColor },
+                                    ticks: { color: textColor}
                                 },
                                 y: {
                                     beginAtZero: true,
                                     position: 'left',
-                                    title: { display: true, text: 'Média (m³/s)', color: '#000000' },
-                                    ticks: { color:'#000000' }
+                                    title: { display: true, text: 'Média (m³/s)', color: textColor },
+                                    ticks: { color: textColor }
                                 },
                                 y1: {
                                     beginAtZero: true,
                                     position: 'right',
                                     grid: { drawOnChartArea: false },
-                                    title: { display: true, text: 'Total (L)', color: '#000000' },
-                                    ticks: { color:  '#000000' }
+                                    title: { display: true, text: 'Total (L)', color: textColor},
+                                    ticks: { color: textColor}
                                 }
                             },
                             plugins: {
@@ -1258,13 +1397,15 @@ document.getElementById("serie_id").addEventListener("change", function () {
             ];
         } else {
 
+        const isDark = document.body.classList.contains('dark-mode');
+        const textColor = isDark ?'#ffffff':'#000000';
             chartConfigs = [
                 {
                     id: 'monthlyAvgChart',
                     config: {
                         type: 'line',
                         data: {
-                            labels: monthLabels,
+                            labels: monthNames,
                             datasets: [{
                                 label: 'Média (m³/s)',
                                 data: monthAvg,
@@ -1276,19 +1417,20 @@ document.getElementById("serie_id").addEventListener("change", function () {
                         },
                         options: {
                             responsive: true,
+                            
                             scales: {
                                 x: {
-                                    title: { display: true, text: 'Mês', color: '#000000' },
-                                    ticks: { color: '#000000' }
+                                    title: { display: true, text: 'Mês', color: textColor },
+                                    ticks: { color: textColor }
                                 },
                                 y: {
                                     beginAtZero: true,
                                     title: {
                                         display: true,
                                         text: 'Caudal Médio (m³/s)',
-                                        color: '#000000'
+                                        color: textColor
                                     },
-                                    ticks: { color: '#000000' }
+                                    ticks: { color:textColor }
                                 }
                             },
                             plugins: {
@@ -1304,7 +1446,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                     config: {
                         type: 'bar',
                         data: {
-                            labels: monthLabels,
+                            labels: monthNames,
                             datasets: [
                                 { label: 'Total (L)', data: monthTotals, backgroundColor: '#90e0ef', yAxisID: 'y', order: 2 },
                                 { label: 'Média (m³/s)', data: monthAvg, type: 'line', borderColor: '#0077b6', backgroundColor: 'rgba(0,119,182,0.2)', fill: true, tension: 0.3, yAxisID: 'y1', order: 1 }
@@ -1312,7 +1454,26 @@ document.getElementById("serie_id").addEventListener("change", function () {
                         },
                         options: {
                             responsive: true,
-                            scales: getScalesOptions(),
+                            scales: {
+                                 x: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Mês', color: textColor },
+                    ticks: { color: textColor }
+                },
+                y: {
+                    beginAtZero: true,
+                    position: 'left',
+                    title: { display: true, text: 'Total (L)', color: textColor},
+                    ticks: { color: textColor }
+                },
+                y1: {
+                    beginAtZero: true,
+                    position: 'right',
+                    grid: { drawOnChartArea: false },
+                    title: { display: true, text: 'Média (m³/s)', color: textColor },
+                    ticks: { color: textColor}
+                }
+                            },
                             plugins: {
                                 zoom: zoomConfigXY,
                                 title: { display: true, text: 'Volume Total e Média Mensal' },
@@ -1338,6 +1499,11 @@ document.getElementById("serie_id").addEventListener("change", function () {
     
         
         function createBoxplotChart() {
+            if (chartInstances['boxplotChart']) {
+                chartInstances['boxplotChart'].destroy();
+                delete chartInstances['boxplotChart'];
+            }
+            
             let dataToUse = boxplotData;
             let isComparison = false;
             
@@ -1391,8 +1557,8 @@ document.getElementById("serie_id").addEventListener("change", function () {
                 }
             }
 
-           
-            const textColor ='#000000';
+            const isDark = document.body.classList.contains('dark-mode');
+            const textColor = isDark ? '#ffffff' : '#000000';
 
             const boxplotConfig = {
                 type: 'boxplot',
@@ -1485,8 +1651,8 @@ document.getElementById("serie_id").addEventListener("change", function () {
         }
 
         function createComparisonBoxplot(comparisonData, months) {
-          
-            const textColor = '#000000';
+            const isDark = document.body.classList.contains('dark-mode');
+            const textColor = isDark ? '#ffffff' : '#000000';
             
             const datasets = [];
             const colorPalette = [
@@ -1636,7 +1802,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                                 font: { size: 12 }
                             },
                             grid: {
-                                color: '#e0e0e0'
+                                color: isDark ? '#444' : '#e0e0e0'
                             }
                         },
                         y: {
@@ -1655,7 +1821,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                                 }
                             },
                             grid: {
-                                color: '#e0e0e0'
+                                color: isDark ? '#444' : '#e0e0e0'
                             }
                         }
                     }
@@ -1676,8 +1842,8 @@ document.getElementById("serie_id").addEventListener("change", function () {
         }
 
         function createAlternativeComparisonBoxplot(comparisonData, months) {
-          
-            const textColor = '#000000';
+            const isDark = document.body.classList.contains('dark-mode');
+            const textColor = isDark ? '#ffffff' : '#000000';
             
             const datasets = [];
             const colorPalette = [
@@ -1827,7 +1993,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                                 font: { size: 12 }
                             },
                             grid: {
-                                color: '#e0e0e0'
+                                color: isDark ? '#444' : '#e0e0e0'
                             }
                         },
                         y: {
@@ -1846,7 +2012,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                                 }
                             },
                             grid: {
-                                color:'#e0e0e0'
+                                color: isDark ? '#444' : '#e0e0e0'
                             }
                         }
                     }
@@ -1897,8 +2063,8 @@ document.getElementById("serie_id").addEventListener("change", function () {
                 }
             });
 
-             
-             const color = '#000000';
+            const isDark = document.body.classList.contains('dark-mode');
+            const textColor = isDark ? '#ffffff' : '#000000';
 
             const alternativeConfig = {
                 type: 'line',
@@ -2020,7 +2186,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                                 font: { size: 12 }
                             },
                             grid: {
-                                color: '#e0e0e0'
+                                color: isDark ? '#444' : '#e0e0e0'
                             }
                         },
                         y: {
@@ -2039,7 +2205,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                                 }
                             },
                             grid: {
-                                color: '#e0e0e0'
+                                color: isDark ? '#444' : '#e0e0e0'
                             }
                         }
                     }
@@ -2055,6 +2221,11 @@ document.getElementById("serie_id").addEventListener("change", function () {
 
         
         function createDailyLineChart() {
+            if (chartInstances['dailyLineChart']) {
+                chartInstances['dailyLineChart'].destroy();
+                delete chartInstances['dailyLineChart'];
+            }
+            
             let dataToUse = lineChartData;
             let isComparison = false;
             
@@ -2073,8 +2244,8 @@ document.getElementById("serie_id").addEventListener("change", function () {
                 return;
             }
 
-           
-            const textColor = '#000000';
+            const isDark = document.body.classList.contains('dark-mode');
+            const textColor = isDark ? '#ffffff' : '#000000';
 
             const dailyConfig = {
                 type: 'line',
@@ -2145,8 +2316,8 @@ document.getElementById("serie_id").addEventListener("change", function () {
         }
 
         function createComparisonDailyLineChart(comparisonData) {
-          
-            const textColor ='#000000';
+            const isDark = document.body.classList.contains('dark-mode');
+            const textColor = isDark ? '#ffffff' : '#000000';
 
             const colorPalette = [
                 '#0077b6', '#f77f00', '#c9184a', '#0d8f5f', '#6a0572', '#fb8500',
@@ -2245,7 +2416,47 @@ document.getElementById("serie_id").addEventListener("change", function () {
                 chartInstances[chartId].resetZoom();
             }
         }
-    
+    function updateChartColors() {
+    const isDark = document.body.classList.contains('dark-mode');
+    const textColor = isDark ? '#ffffff' : '#000000';
+
+    ['monthlyAvgChart', 'monthlyTotalChart'].forEach(chartId => {
+        const chart = Chart.getChart(chartId);
+        if (chart) {
+            const scales = chart.options.scales;
+
+            // X Axis
+            if (scales.x) {
+                if (scales.x.title) scales.x.title.color = textColor;
+                if (scales.x.ticks) scales.x.ticks.color = textColor;
+            }
+
+            // Y Axis
+            if (scales.y) {
+                if (scales.y.title) scales.y.title.color = textColor;
+                if (scales.y.ticks) scales.y.ticks.color = textColor;
+            }
+
+            // Y1 Axis (if exists)
+            if (scales.y1) {
+                if (scales.y1.title) scales.y1.title.color = textColor;
+                if (scales.y1.ticks) scales.y1.ticks.color = textColor;
+            }
+
+            // 🔹 Plugins
+            const plugins = chart.options.plugins;
+            if (plugins.title) {
+                plugins.title.color = textColor; // Chart title
+            }
+            if (plugins.legend && plugins.legend.labels) {
+                plugins.legend.labels.color = textColor; // Legend labels
+            }
+
+            chart.update();
+        }
+    });
+}
+
         function updateChartsTheme() {
             
             createYearlyTrendChart();
@@ -2256,14 +2467,8 @@ document.getElementById("serie_id").addEventListener("change", function () {
             
             
             createLinhaCharts();
+            updateChartColors();
             
-            chartConfigs.forEach(cfg => {
-                const chart = chartInstances[cfg.id];
-                if (chart) {
-                    chart.options.scales = getScalesOptions();
-                    chart.update();
-                }
-            });
         }
 
 
@@ -2555,14 +2760,14 @@ document.getElementById("serie_id").addEventListener("change", function () {
         function showAutoFillNotification(selectedYears, serieId) {
             
             const notification = document.createElement('div');
-           
+            const isDarkMode = document.body.classList.contains('dark-mode');
             
             notification.style.position = 'fixed';
             notification.style.top = '20px';
             notification.style.right = '20px';
-            notification.style.backgroundColor ='#d4edda';
-            notification.style.color = '#155724';
-            notification.style.border = '1px solid #c3e6cb';
+            notification.style.backgroundColor = isDarkMode ? '#2c3e50' : '#d4edda';
+            notification.style.color = isDarkMode ? '#74b9ff' : '#155724';
+            notification.style.border = isDarkMode ? '1px solid #74b9ff' : '1px solid #c3e6cb';
             notification.style.borderRadius = '8px';
             notification.style.padding = '12px 16px';
             notification.style.zIndex = '9999';
@@ -2574,7 +2779,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
             const seriesName = document.querySelector(`input[value="${serieId}"]`).parentElement.querySelector('label').textContent;
             notification.innerHTML = `
                 <div style="display: flex; align-items: flex-start; gap: 8px;">
-                    <i class="fas fa-check-circle" style="margin-top: 2px; color:'#0077b6'};"></i> 
+                    <i class="fas fa-check-circle" style="margin-top: 2px; color: ${isDarkMode ? '#74b9ff' : '#0077b6'};"></i> 
                     <div>
                         <strong>Anos selecionados automaticamente:</strong><br>
                         <small>${seriesName}: ${selectedYears.join(', ')}</small>
@@ -2622,9 +2827,23 @@ document.getElementById("serie_id").addEventListener("change", function () {
             }
         });
 
-       
+        if (localStorage.getItem('modoEscuro') === 'ativo') {
+            document.body.classList.add('dark-mode');
+            updateChartsTheme();
 
-       
+
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle("dark-mode");
+            if (document.body.classList.contains('dark-mode')) {
+                localStorage.setItem('modoEscuro', 'ativo');
+            } else {
+                localStorage.setItem('modoEscuro', 'inativo');
+            }
+            updateChartsTheme();
+             
+        }
 
         function showLoading() {
             const loadingSpinner = document.getElementById('loading-spinner');
@@ -2759,7 +2978,6 @@ document.getElementById("serie_id").addEventListener("change", function () {
             setTimeout(showCacheStatus, 1000);
         });
 
-  
 async function exportarExcel() {
     showLoading();
     try {
@@ -2834,7 +3052,6 @@ async function exportarExcel() {
         hideLoading();
     }
 }
-
 
         // -------- PDF EXPORT ---------
         function getCSRF() {
@@ -3238,8 +3455,17 @@ async function exportarExcel() {
 
         
         function createLinhaCharts() {
-          
-            const textColor = '#000000';
+            if (chartInstances['linhaDiariaChart']) {
+                chartInstances['linhaDiariaChart'].destroy();
+                delete chartInstances['linhaDiariaChart'];
+            }
+            if (chartInstances['linhaDiariaChartT']) {
+                chartInstances['linhaDiariaChartT'].destroy();
+                delete chartInstances['linhaDiariaChartT'];
+            }
+            
+            const isDark = document.body.classList.contains('dark-mode');
+            const textColor = isDark ? '#ffffff' : '#000000';
             
             
             if (comparisonMode && Object.keys(comparisonLineChartData).length > 0) {
@@ -3314,7 +3540,7 @@ async function exportarExcel() {
                     data: {
                         labels: linhaTemporalLabelsT,
                         datasets: [{
-                            label: 'Caudal (m³/s) - Todos os Instantes',
+                            label: 'Caudal (m³/s)',
                             data: linhaTemporalValoresT,
                             fill: false,
                             borderColor: 'rgba(220, 53, 69, 0.8)',
@@ -3360,7 +3586,7 @@ async function exportarExcel() {
                         scales: {
                             x: {
                                 type: 'category',
-                                title: { display: true, text: 'Timestamp', color: textColor },
+                                title: { display: true, text: 'Timestamp (15 em 15 min)', color: textColor },
                                 ticks: {
                                     maxTicksLimit: 10,
                                     autoSkip: true,
@@ -3417,8 +3643,17 @@ async function exportarExcel() {
 
         
         function createComparisonLinhaCharts() {
-         
-            const textColor = '#000000';
+            if (chartInstances['linhaDiariaChart']) {
+                chartInstances['linhaDiariaChart'].destroy();
+                delete chartInstances['linhaDiariaChart'];
+            }
+            if (chartInstances['linhaDiariaChartT']) {
+                chartInstances['linhaDiariaChartT'].destroy();
+                delete chartInstances['linhaDiariaChartT'];
+            }
+            
+            const isDark = document.body.classList.contains('dark-mode');
+            const textColor = isDark ? '#ffffff' : '#000000';
             
             const colorPalette = [
                 '#0077b6', '#f77f00', '#c9184a', '#0d8f5f', '#6a0572', '#fb8500',
@@ -3585,7 +3820,7 @@ async function exportarExcel() {
                     data: {
                         labels: sortedInstantaneousLabels,
                         datasets: [{
-                            label: 'Séries Combinadas - Todos os Instantes',
+                            label: 'Caudal (m³/s)',
                             data: combinedInstantaneousValues,
                             borderColor: '#0077b6',
                             backgroundColor: 'rgba(0,119,182,0.15)',
@@ -3620,7 +3855,7 @@ async function exportarExcel() {
                             },
                             title: {
                                 display: true,
-                                text: 'Dados Completos - Comparação (Todos os Instantes)',
+                                text: 'Comparação',
                                 font: { size: 18 },
                                 color: textColor
                             }
@@ -3637,7 +3872,7 @@ async function exportarExcel() {
                         scales: {
                             x: {
                                 type: 'category',
-                                title: { display: true, text: 'Timestamp', color: textColor },
+                                title: { display: true, text: 'Timestamp (15 em 15 min)', color: textColor },
                                 ticks: {
                                     maxTicksLimit: 10,
                                     autoSkip: true,

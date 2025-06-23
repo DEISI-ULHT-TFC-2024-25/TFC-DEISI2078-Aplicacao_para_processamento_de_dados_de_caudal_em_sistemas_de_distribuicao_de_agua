@@ -4,6 +4,8 @@ from . import views
 
 app_name = 'caudais'
 urlpatterns = [
+    path('home/', views.home, name='home'),
+    path('sobre/', views.sobre, name='sobre'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('dashboard_comparison/', views.dashboard_comparison, name='dashboard_comparison'),
     path('exportar_excel/', views.exportar_excel, name='exportar_excel'),

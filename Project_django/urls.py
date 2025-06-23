@@ -21,7 +21,7 @@ from django.conf.urls.static import static
 from django.shortcuts import redirect
 
 urlpatterns = [
-    path('', lambda request: redirect('caudais:dashboard'), name='home'),
+    path('', lambda request: redirect('caudais:home'), name='home'),
     path('admin/', admin.site.urls),
     path('caudais/', include('caudais.urls')),
     path('autenticacao/', include('autenticacao.urls')),
