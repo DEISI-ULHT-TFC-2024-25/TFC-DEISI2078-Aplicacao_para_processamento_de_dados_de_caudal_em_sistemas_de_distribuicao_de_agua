@@ -8,6 +8,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.awesome-markers/2.0.4/leaflet.awesome-markers.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.awesome-markers/2.0.4/leaflet.awesome-markers.js"></script>
+
     <style>
         * {
             margin: 0;
@@ -71,21 +74,23 @@
 
         .nav-links a {
             text-decoration: none;
-            color: #4a5568;
-            font-weight: 500;
+            color:  #0077b6;
+            font-weight: 600;
+            font-size: 1.5rem;
+
             transition: color 0.3s ease;
         }
 
         .nav-links a:hover {
-            color: #0077b6;
+            color: #05a6d2;
         }
 
         body.dark-mode .nav-links a {
-            color: #94a3b8;
+            color:  #0077b6;
         }
 
         body.dark-mode .nav-links a:hover {
-            color: #00b4d8;
+            color:#05a6d2;
         }
 
         .cta-button {
@@ -442,11 +447,11 @@
         }
 
         .institution-logos {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 1rem;
-        }
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+}
 
         .logo-item {
             display: flex;
@@ -498,6 +503,16 @@
             border-color: #475569;
             color: #94a3b8;
         }
+        .artigo-link {
+    color: #0077b6;
+    text-decoration: none;
+    transition: color 0.3s ease, text-decoration 0.3s ease;
+}
+
+.artigo-link:hover {
+    color: #005f94;
+    text-decoration: underline;
+}
 
         @media (max-width: 1024px) {
             .sidebar {
@@ -514,7 +529,7 @@
             .sidebar {
                 width: 100%;
                 height: auto;
-                max-height: 50vh;
+               
             }
 
             .map-container {
@@ -567,20 +582,22 @@
                 <i class="fas fa-water"></i>
                 Caudais
             </a>
-            <ul class="nav-links">
+           <ul class="nav-links">
                 <li><a href="{% url 'caudais:home' %}">Início</a></li>
-                <li><a href="{% url 'caudais:sobre' %}">Sobre</a></li>
-                {% if request.user.is_authenticated %}
-                    <li><a href="{% url 'autenticacao:logout' %}">Logout</a></li>
-                {% else %}
-                    <li><a href="{% url 'autenticacao:login' %}">Login</a></li>
-                {% endif %}
+                
             </ul>
             <div style="display: flex; align-items: center; gap: 1rem;">
                 <button id="theme-toggle" class="theme-toggle">
                     <i class="fas fa-moon"></i>
                 </button>
-                <a href="{% url 'caudais:dashboard' %}" class="cta-button">Dashboard</a>
+                 <div class="page-heading">
+   
+                
+                  {% if request.user.is_authenticated %}
+                    <a href="{% url 'autenticacao:logout' %}" class="cta-button">Logout</a>
+                {% else %}
+                    <a href="{% url 'autenticacao:login' %}" class="cta-button">Login</a>
+                {% endif %}
             </div>
         </nav>
     </header>
@@ -589,10 +606,12 @@
     <div class="main-container">
         <aside class="sidebar">
             <div class="sidebar-content">
+                
                 <div class="hero-section">
+                   
+                
                     <h1 class="hero-title">Monitorização de Caudais</h1>
-                    <p class="hero-subtitle">Plataforma avançada para processamento e reconstrução de dados de caudal em sistemas de distribuição de água</p>
-                    
+     <p class="hero-subtitle">Plataforma avançada para processamento e reconstrução de dados de caudal em sistemas de distribuição de água</p>
                     <div class="action-buttons">
                         <a href="{% url 'caudais:dashboard' %}" class="btn-primary">
                             <i class="fas fa-chart-line"></i>
@@ -624,7 +643,9 @@
             </div>
             <div class="feature-content">
                 <h4>Normalização</h4>
-                <p>Garante que todas as séries de caudal seguem a mesma granularidade temporal (15 em 15) e extensão temporal. Intervalos em falta são preenchidos com <strong>NAs</strong>, criando uma matriz regular para posterior análise estatística e reconstrução.</p>
+                <p>Garante que todas as séries de caudal têm uma granularidade uniforme (de 15 em 15 minutos) e abrangem o mesmo intervalo temporal.
+Intervalos de tempo ausentes são inicialmente preenchidos com valores ausentes <strong>(NAs)</strong> e, quando possível, reconstruídos por interpolação linear com base nos valores imediatamente anteriores e seguintes.
+Este processo resulta numa matriz temporal regular, essencial para análises estatísticas e métodos de reconstrução mais avançados.</p>
             </div>
         </div>
                         <div class="feature-item">
@@ -632,12 +653,21 @@
                                 <i class="fas fa-brain"></i>
                             </div>
                             <div class="feature-content">
-                                <h4>Reconstrução JQ/TBATS</h4>
-                                    <p>Integração de algoritmos de reconstrução de dados faltantes, com base em métodos estatísticos como JQ e TBATS. O método <strong>JQ</strong> combina padrões mensais com estimativas TBATS diárias. O método <strong>TBATS</strong> utiliza previsões forward e backward para reconstruir dados ausentes. Permite gerar versões reconstruídas dos dados para comparação e análise.</p>
+                                <h4>Reconstrução de Dados em Falta</h4>
+                                    <p>Integração de algoritmos de reconstrução de dados faltantes, após normalização dos dados, com base em métodos estatísticos como JQ e TBATS. O método <strong>JQ</strong> (designação adotada neste projeto para abreviar o uso de Quantis Mensais) baseia-se na abordagem proposta por <strong><a href="https://upcommons.upc.edu/bitstream/handle/2117/11518/quevedo.pdf" target="_blank" class="artigo-link">
+    Quevedo et al. (2009)</a></strong>. O método <strong>TBATS</strong> (Trigonometric, Box-Cox, ARMA, Trend and Seasonality) utiliza componentes harmónicos e previsões forward/backward para reconstruir dados ausentes. Ambos os métodos permitem gerar versões reconstruídas dos dados para comparação e análise detalhada.
                             </div>
                         </div>
                        
-
+ <div class="feature-item">
+    <div class="feature-icon">
+        <i class="fas fa-chart-line"></i>
+    </div>
+    <div class="feature-content">
+        <h4>Gráficos Interativos</h4>
+        <p>Visualização detalhada dos dados e estatísticas em gráficos interativos, com suporte a tooltip, alternância entre caudal bruto, normalizado ou reconstruído (JQ ou TBATS). Inclui também ferramentas de zoom, pan e seleção temporal interativa.</p>
+    </div>
+</div>
                         <div class="feature-item">
                             <div class="feature-icon">
                                 <i class="fas fa-chart-area"></i>
@@ -647,15 +677,7 @@
                                 <p>Geração automática de estatísticas descritivas (mínimos, máximos, médias, desvios padrão), boxplots mensais, análise diária e comparações entre períodos.</p>
                             </div>
                         </div>
-                         <div class="feature-item">
-    <div class="feature-icon">
-        <i class="fas fa-chart-line"></i>
-    </div>
-    <div class="feature-content">
-        <h4>Gráficos Interativos</h4>
-        <p>Visualização detalhada dos dados e estatísticas em gráficos interativos, com suporte a tooltip, alternância entre caudal bruto, normalizado ou reconstruído (JQ ou TBATS). Inclui também ferramentas de zoom, pan e seleção temporal interativa.</p>
-    </div>
-</div>
+                        
                         <div class="feature-item">
                             <div class="feature-icon">
                                 <i class="fas fa-map-marked-alt"></i>
@@ -679,9 +701,20 @@
                                 <i class="fas fa-university"></i>
                             </div>
                             <div class="logo-info">
-                                <span class="logo-name">Universidade Lusófona</span>
+                                <span class="logo-name">ULHT</span>
+                                <span class="logo-desc">Universidade Lusófona de Humanidades e Tecnologias</span>
                             </div>
                         </div>
+
+                         <div class="logo-item">
+                <div class="logo-placeholder">
+                    <i class="fas fa-flask"></i>
+                </div>
+                <div class="logo-info">
+                    <span class="logo-name">LNEC</span>
+                    <span class="logo-desc">Laboratório Nacional de Engenharia Civil</span>
+                </div>
+            </div>
                     </div>
                 </div>
             </div>
@@ -690,6 +723,11 @@
 
         <main class="map-container">
             <div id="map"></div>
+            <div class="map-controls">
+    <button class="control-button" onclick="centerMapLisboa()" title="Centrar em Lisboa">
+        <i class="fas fa-location-crosshairs"></i>
+    </button>
+</div>
 
         </main>
     </div>
@@ -706,16 +744,23 @@
         }).addTo(map);
         const monitoringPoints = window.monitoringPointsData || [];
         
-        const createIcon = (isSelected = false) => {
-            const color = isSelected ? '#0077b6' : '#64748b';
-            
-            return L.divIcon({
-                className: 'custom-div-icon',
-                html: `<div style="background-color: ${color}; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>`,
-                iconSize: [16, 16],
-                iconAnchor: [8, 8]
-            });
-        };
+       const createIcon = (isSelected = false) => {
+      const color = isSelected ? "#0450a3" : "#0077b6";
+    const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36" width="30" height="45">
+            <path fill="${color}" d="M12 0C5.4 0 0 5.4 0 12c0 7.5 12 24 12 24s12-16.5 12-24c0-6.6-5.4-12-12-12z"/>
+            <circle cx="12" cy="12" r="5" fill="white"/>
+        </svg>
+    `;
+
+    return L.divIcon({
+        html: svg,
+        className: '',
+        iconSize: [30, 45],
+        iconAnchor: [15, 45],
+        popupAnchor: [0, -45]
+    });
+};
 
         const markers = [];
         let selectedMarker = null;
@@ -770,6 +815,9 @@
                 localStorage.setItem('modoEscuro', 'inativo');
             }
         });
+        function centerMapLisboa() {
+    map.setView([39.5, -8.0], 7); // Coordenadas aproximadas de Lisboa
+}
     </script>
 </body>
 </html> 

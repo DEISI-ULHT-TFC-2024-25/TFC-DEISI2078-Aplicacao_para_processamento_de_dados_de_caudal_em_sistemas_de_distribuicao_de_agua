@@ -84,7 +84,7 @@
               margin-bottom: 40px;
           }
   
-          form {
+        form {
               display: flex;
               flex-wrap: wrap;
               justify-content: center;
@@ -496,6 +496,9 @@
         </div>
         <!-- Menu Dropdown -->
         <div class="dropdown-menu" id="dropdownMenu">
+             
+            <a href="{% url 'caudais:home' %}"><i class="fas fa-home"></i> Início</a>
+            <a href="{% url 'caudais:sobre' %}"><i class="fas fa-info-circle"></i> Sobre</a>
             <a href="{% url 'caudais:upload_novo_ponto' %}"><i class="fas fa-upload"></i> Upload de Medições</a>
             <a href="#" onclick="exportarExcel()"><i class="fas fa-file-excel"></i> Exportar para Excel</a>
             <a href="#" onclick="exportarPDF()"><i class="fas fa-file-pdf"></i> Gerar Relatório (PDF)</a>
@@ -511,16 +514,6 @@
                 <i class="fas fa-water" style="margin-right: 0.5rem;"></i>
                 Dashboard de Medições
             </h1>
-            <nav style="display: flex; gap: 1.5rem;">
-                <a href="{% url 'caudais:home' %}" style="color: #4a5568; text-decoration: none; font-weight: 500; transition: color 0.3s ease;">
-                    <i class="fas fa-home" style="margin-right: 0.5rem;"></i>
-                    Início
-                </a>
-                <a href="{% url 'caudais:sobre' %}" style="color: #4a5568; text-decoration: none; font-weight: 500; transition: color 0.3s ease;">
-                    <i class="fas fa-info-circle" style="margin-right: 0.5rem;"></i>
-                    Sobre
-                </a>
-            </nav>
         </div>
         <div style="display: flex; align-items: center; gap: 1rem; margin-right: 45px">
             <div style="color: var(--azul-primario); font-size: 0.9rem;">
@@ -554,7 +547,7 @@
             </select>
         </div>
 
-        <div class="form-group checkbox-group">
+        <div class="form-group checkbox-group flex flex-row" style="display: flex;flex-direction: row;gap:5px;align-items: center;">
             <label for="comparison_mode">Modo Comparação:</label>
             <input type="checkbox" name="comparison_mode" id="comparison_mode" value="true" {% if comparison_mode %}checked{% endif %}>
         </div>
@@ -620,7 +613,7 @@
 
     <!-- CHARTS -->
     <div class="chart-container">
-        <h2>Evolução Anual de Caudais</h2>
+        <h2>Evolução Anual De Caudal</h2>
         <canvas id="yearlyChart"></canvas>
         <button onclick="resetZoom('yearlyChart')">Redefinir Zoom</button>
     </div>
@@ -628,9 +621,9 @@
     <div class="chart-container">
         <h2>
             {% if comparison_mode %}
-                Caudal Médio por Mês - Comparação
+                Evolução Média Mensal De Caudal - Comparação
             {% else %}
-                Caudal Médio por Mês - Ano {{ selected_year }}
+                Evolução Média Mensal De Caudal - Ano {{ selected_year }}
             {% endif %}
         </h2>
         <canvas id="monthlyAvgChart"></canvas>
@@ -640,9 +633,9 @@
     <div class="chart-container">
         <h2>
             {% if comparison_mode %}
-                Volume Total Mensal - Comparação
+                Volume Mensal De Caudal - Comparação
             {% else %}
-                Volume Total Mensal - Ano {{ selected_year }}
+                Volume Mensal De Caudal - Ano {{ selected_year }}
             {% endif %}
         </h2>
         <canvas id="monthlyTotalChart"></canvas>
@@ -753,9 +746,9 @@
     <div class="chart-container">
         <h2>
             {% if comparison_mode %}
-                Contagem Mensal - Comparação
+                Contagem Mensal De Medições - Comparação
             {% else %}
-                Contagem Mensal - Ano {{ selected_year }}
+                Contagem Mensal De Medições - Ano {{ selected_year }}
             {% endif %}
         </h2>
         
@@ -880,7 +873,7 @@
         const tooltipCallback = context => {
             const label = context.dataset.label || '';
             const value = context.parsed.y;
-            const unidade = label.includes("Total") ? " L" : " m³/s";
+            const unidade = label.includes("Volume") ? "m³" : " m³/s";
             return `${label}: ${value}${unidade}`;
         };
 //linhaTemporalLabelsT.forEach((label, i) => {
@@ -985,7 +978,7 @@
                 y: {
                     beginAtZero: true,
                     position: 'left',
-                    title: { display: true, text: 'Total (L)', color: textColor },
+                    title: { display: true, text: 'Volume (m³)', color: textColor },
                     ticks: { color: textColor }
                 },
                 y1: {
@@ -1030,7 +1023,7 @@
                 datasets: [
                     { 
                         type: 'bar', 
-                        label: 'Total (L)', 
+                        label: 'Volume (m³)', 
                         data: totals, 
                         backgroundColor: '#90e0ef', 
                         borderColor: '#0077b6',
@@ -1082,7 +1075,7 @@
                     
                     datasets.push({
                         type: 'bar',
-                        label: `${series.serie.nome} (${selectedYear}) - Total (L)`,
+                        label: `${series.serie.nome} (${selectedYear}) - Volume (m³)`,
                         data: sortedYears.map(year => {
                             if (year === selectedYear) {
                                 return series.totals[yearIndex] || 0;
@@ -1246,7 +1239,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                     if (yearIndex !== -1) {
                     datasets.push({
                         type: 'bar',
-                            label: `${series.serie.nome} (${selectedYear}) - Total (L)`,
+                            label: `${series.serie.nome} (${selectedYear}) - Volume (m³)`,
                             data: [{ x: selectedYear, y: series.totals[yearIndex] }],
                         backgroundColor: color.bg,
                         borderColor: color.border,
@@ -1279,7 +1272,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                     } else if (dataType === 'total') {
                         datasets.push({
                             type: 'bar',
-                            label: `${series.serie.nome} (${selectedYear}) - Total (L)`,
+                            label: `${series.serie.nome} (${selectedYear}) - Volume (m³)`,
                             data: series.month_totals,
                             backgroundColor: color.bg,
                             borderColor: color.border,
@@ -1383,7 +1376,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                                     beginAtZero: true,
                                     position: 'right',
                                     grid: { drawOnChartArea: false },
-                                    title: { display: true, text: 'Total (L)', color: textColor},
+                                    title: { display: true, text: 'Volume (m³)', color: textColor},
                                     ticks: { color: textColor}
                                 }
                             },
@@ -1435,7 +1428,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                             },
                             plugins: {
                                 zoom: zoomConfigXY,
-                                title: { display: true, text: 'Caudal Médio Mensal' },
+                                
                                 tooltip: { mode: 'index', intersect: false }
                             }
                         }
@@ -1448,7 +1441,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                         data: {
                             labels: monthNames,
                             datasets: [
-                                { label: 'Total (L)', data: monthTotals, backgroundColor: '#90e0ef', yAxisID: 'y', order: 2 },
+                                { label: 'Volume (m³)', data: monthTotals, backgroundColor: '#90e0ef', yAxisID: 'y', order: 2 },
                                 { label: 'Média (m³/s)', data: monthAvg, type: 'line', borderColor: '#0077b6', backgroundColor: 'rgba(0,119,182,0.2)', fill: true, tension: 0.3, yAxisID: 'y1', order: 1 }
                             ]
                         },
@@ -1463,7 +1456,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                 y: {
                     beginAtZero: true,
                     position: 'left',
-                    title: { display: true, text: 'Total (L)', color: textColor},
+                    title: { display: true, text: 'Volume (m³)', color: textColor},
                     ticks: { color: textColor }
                 },
                 y1: {
@@ -1476,7 +1469,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                             },
                             plugins: {
                                 zoom: zoomConfigXY,
-                                title: { display: true, text: 'Volume Total e Média Mensal' },
+                                
                                 tooltip: { mode: 'index', intersect: false, callbacks: { label: tooltipCallback } }
                             }
                         }
@@ -1597,7 +1590,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                     },
                     plugins: {
                         title: {
-                            display: true,
+                            display: false,
                             text: 'Distribuição Mensal de Caudal',
                             color: textColor
                         },
@@ -2268,7 +2261,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                     responsive: true,
                     plugins: {
                         title: {
-                            display: true,
+                            display: false,
                             text: 'Evolução Diária do Caudal',
                             color: textColor
                         },
@@ -3121,7 +3114,8 @@ async function exportarExcel() {
             data_type: document.getElementById('data_type').value,
             recon_method: document.getElementById('recon_method').value,
             selected_year: document.getElementById('year').value ? parseInt(document.getElementById('year').value) : null,
-            series_years: seriesYears
+            series_years: seriesYears,
+            ponto_medicao:document.getElementById('ponto_medicao').value
         };
 
         fetch('/caudais/exportar_pdf/', {
@@ -4070,7 +4064,7 @@ console.log(comparisonInstantaneousData);
                                     <h5 style="margin-bottom: 0.5rem; color: #0077b6;">${serieName}</h5>
                                     <p style="margin: 0 0 0.5rem 0; font-size: 12px; color: #6c757d;"><em>Período: ${formatPeriod()}</em></p>
                                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; font-size: 14px;">
-                                        <p><strong>Total:</strong> ${dados.length.toLocaleString()}</p>
+                                        <p><strong>Número de Medições:</strong> ${dados.length.toLocaleString()}</p>
                                         <p><strong>Média:</strong> ${media.toFixed(3)} m³/s</p>
                                         <p><strong>Máximo:</strong> ${max.toFixed(3)} m³/s</p>
                                         <p><strong>Mínimo:</strong> ${min.toFixed(3)} m³/s</p>
@@ -4124,7 +4118,7 @@ console.log(comparisonInstantaneousData);
                         ">
                             <h5 style="margin-bottom: 0.5rem; color: #343a40;">Estatísticas Globais (todas as séries)</h5>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; font-size: 14px;">
-                                <p><strong>Total:</strong> ${combinedValues.length.toLocaleString()}</p>
+                                <p><strong>Número de Medições:</strong> ${combinedValues.length.toLocaleString()}</p>
                                 <p><strong>Média:</strong> ${mediaG.toFixed(3)} m³/s</p>
                                 <p><strong>Máximo:</strong> ${maxG.toFixed(3)} m³/s</p>
                                 <p><strong>Mínimo:</strong> ${minG.toFixed(3)} m³/s</p>
@@ -4179,7 +4173,7 @@ console.log(comparisonInstantaneousData);
                             max-width: 500px;
                         ">
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; font-size: 14px;">
-                                <p><strong>Total:</strong> ${dados.length.toLocaleString()}</p>
+                                <p><strong>Número de Medições:</strong> ${dados.length.toLocaleString()}</p>
                                 <p><strong>Média:</strong> ${media.toFixed(3)} m³/s</p>
                                 <p><strong>Máximo:</strong> ${max.toFixed(3)} m³/s</p>
                                 <p><strong>Mínimo:</strong> ${min.toFixed(3)} m³/s</p>
@@ -4208,17 +4202,19 @@ console.log(comparisonInstantaneousData);
             }
 
             document.getElementById("resultadoEstatisticas").innerHTML = `
-                <div style="
-                    background-color: #ffffff;
-                    border: 1px solid #ced4da;
-                    border-radius: 10px;
-                    padding: 1rem 1.5rem;
-                    margin-top: 1rem;
-                    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-                    font-family: 'Segoe UI', sans-serif;
-                    color: #343a40;
-                    max-width: 600px;
-                ">
+              <div style="display: flex; justify-content: center; flex-wrap: wrap;">
+        <div style="
+            background-color: #ffffff;
+            border: 1px solid #ced4da;
+            border-radius: 10px;
+            padding: 1rem 1.5rem;
+            margin-top: 1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            font-family: 'Segoe UI', sans-serif;
+            color: #343a40;
+            max-width: 600px;
+            width: 100%;
+        ">
                     ${resultHTML}
                 </div>
             `;

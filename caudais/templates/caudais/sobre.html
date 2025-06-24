@@ -350,7 +350,16 @@
         body.dark-mode .tech-description {
             color: #94a3b8;
         }
+.lnec-link {
+    color: #0077b6;
+    text-decoration: none;
+    transition: color 0.3s ease, text-decoration 0.3s ease;
+}
 
+.lnec-link:hover {
+    color: #005f94;
+    text-decoration: underline;
+}
         @media (max-width: 768px) {
             .container {
                 padding: 100px 1rem 2rem;
@@ -423,7 +432,7 @@
                     <div class="lnec-text">
                         <h3>Laboratório Nacional de Engenharia Civil</h3>
                         <p>
-    O <a href="https://www.lnec.pt" target="_blank" style="color: #0077b6; text-decoration: none;">
+    O <a href="https://www.lnec.pt" target="_blank" class="lnec-link">
            <strong>LNEC</strong> </a> 
         é uma instituição pública de investigação reconhecida nacional e internacionalmente, com uma longa tradição na produção de conhecimento científico e tecnológico nas áreas da engenharia civil e do ambiente.
     <br><br>

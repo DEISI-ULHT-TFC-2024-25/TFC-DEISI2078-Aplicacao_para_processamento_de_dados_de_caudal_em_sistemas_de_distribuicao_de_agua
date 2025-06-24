@@ -1454,7 +1454,7 @@ def dashboard(request):
                 # Nada necessario, ja nao metemos o grafico de linhas instantaneas
                 pass
 
-    month_names=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+    month_names=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dez']
     
     # Gaps
     gap_table_rows = []
@@ -2005,6 +2005,13 @@ def exportar_pdf(request):
         recon_method = payload.get('recon_method', 'jq')
         selected_year = payload.get('selected_year')
         series_years = payload.get('series_years', {})
+        ponto_medicao_id = payload.get('ponto_medicao', None)
+        ponto_medicao_obj = None
+        if ponto_medicao_id:
+            try:
+                ponto_medicao_obj = PontoMedida.objects.get(id=int(ponto_medicao_id))
+            except PontoMedida.DoesNotExist:
+                pass
         
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, 
@@ -2028,12 +2035,35 @@ def exportar_pdf(request):
             spaceBefore=20,
             textColor=colors.HexColor('#0077b6')
         )
+        heading_style2 = ParagraphStyle(
+            'CustomHeading',
+            parent=styles['Heading3'],
+            fontSize=12,
+            spaceAfter=12,
+            spaceBefore=20,
+            textColor=colors.HexColor("#042557")
+        )
         
         story = []
         selected_series = []
         
         story.append(Paragraph("Relatório", title_style))
         story.append(Spacer(1, 15))
+        tipo_legivel = {
+                        "raw": "Não processados",
+                        "normalized": "Normalizados",
+                        "jq": "Reconstruídos (JQ)",
+                        "tbats": "Reconstruídos (TBATS)"
+                            }
+                    
+        tipo_descricao = tipo_legivel.get(data_type if data_type != 'reconstruido' else recon_method, "Desconhecido")
+
+        story.append(Paragraph(
+                     f"<b>Ponto:</b> {ponto_medicao_obj.regiao.nome} - {ponto_medicao_obj.regiao.localidade}<br/>"
+                    f"<b>Tipo de Dados:</b> {tipo_descricao}<br/>"
+                    ,
+                    heading_style
+                        ))
         
         
         if serie_ids:
@@ -2065,7 +2095,12 @@ def exportar_pdf(request):
                 
                 for year in years_to_process:
                     
-                    story.append(Paragraph(f"Série: {serie.nome} - Ano: {year}", heading_style))
+                   
+                    story.append(Paragraph(
+                    f"<b>Série:</b> {serie.nome} - Ano: {year} "
+                    ,
+                     heading_style2
+                        ))
                     story.append(Spacer(1, 5))
                     
                     if data_type == 'raw':
