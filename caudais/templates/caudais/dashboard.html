@@ -324,6 +324,7 @@
   
           .dropdown-menu a:hover {
               background-color: var(--azul-claro);
+              color:black
           }
 
           .comparison-table {
@@ -499,10 +500,20 @@
              
             <a href="{% url 'caudais:home' %}"><i class="fas fa-home"></i> Início</a>
             <a href="{% url 'caudais:sobre' %}"><i class="fas fa-info-circle"></i> Sobre</a>
-            <a href="{% url 'caudais:upload_novo_ponto' %}"><i class="fas fa-upload"></i> Upload de Medições</a>
+            <a href="{% url 'caudais:upload_novo_ponto' %}"><i class="fas fa-upload"></i> Carregar Medições</a>
             <a href="#" onclick="exportarExcel()"><i class="fas fa-file-excel"></i> Exportar para Excel</a>
-            <a href="#" onclick="exportarPDF()"><i class="fas fa-file-pdf"></i> Gerar Relatório (PDF)</a>
-            <a href="#" onclick="toggleTheme()"><i class="fas fa-adjust"></i> Alternar Modo Claro/Escuro</a>
+         <a href="#" onclick="exportarPDF()">
+  <svg xmlns="http://www.w3.org/2000/svg"
+       viewBox="40 0 384 512"
+       width="16"
+       height="16"
+       style="margin-right: 2px; fill: currentColor;">
+    <path d="M181.9 256.1c-5-16-4.9-46.9-2-46.9 8.4 0 7.6 36.9 2 46.9zm-1.7 47.2c-7.7 20.2-17.3 43.3-28.4 62.7 18.3-7 39-17.2 62.9-21.9-12.7-9.6-24.9-23.4-34.5-40.8zM86.1 428.1c0 .8 13.2-5.4 34.9-40.2-6.7 6.3-29.1 24.5-34.9 40.2zM248 160h136v328c0 13.3-10.7 24-24 24H24c-13.3 0-24-10.7-24-24V24C0 10.7 10.7 0 24 0h200v136c0 13.2 10.8 24 24 24zm-8 171.8c-20-12.2-33.3-29-42.7-53.8 4.5-18.5 11.6-46.6 6.2-64.2-4.7-29.4-42.4-26.5-47.8-6.8-5 18.3-.4 44.1 8.1 77-11.6 27.6-28.7 64.6-40.8 85.8-.1 0-.1 .1-.2 .1-27.1 13.9-73.6 44.5-54.5 68 5.6 6.9 16 10 21.5 10 17.9 0 35.7-18 61.1-61.8 25.8-8.5 54.1-19.1 79-23.2 21.7 11.8 47.1 19.5 64 19.5 29.2 0 31.2-32 19.7-43.4-13.9-13.6-54.3-9.7-73.6-7.2zM377 105L279 7c-4.5-4.5-10.6-7-17-7h-6v128h128v-6.1c0-6.3-2.5-12.4-7-16.9zm-74.1 255.3c4.1-2.7-2.5-11.9-42.8-9 37.1 15.8 42.8 9 42.8 9z"/>
+  </svg>Gerar Relatório
+</a>
+
+
+            <a href="#" onclick="toggleTheme()"><i class="fas fa-adjust"></i> Modo Claro/Escuro</a>
             <a href="{% url 'autenticacao:logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a>
         </div>
     </div>
@@ -618,24 +629,14 @@
         <button onclick="resetZoom('yearlyChart')">Redefinir Zoom</button>
     </div>
 
-    <div class="chart-container">
-        <h2>
-            {% if comparison_mode %}
-                Evolução Média Mensal De Caudal - Comparação
-            {% else %}
-                Evolução Média Mensal De Caudal - Ano {{ selected_year }}
-            {% endif %}
-        </h2>
-        <canvas id="monthlyAvgChart"></canvas>
-        <button onclick="resetZoom('monthlyAvgChart')">Redefinir Zoom</button>
-    </div>
+    
 
     <div class="chart-container">
         <h2>
             {% if comparison_mode %}
-                Volume Mensal De Caudal - Comparação
+                Evolução Mensal De Caudal - Comparação
             {% else %}
-                Volume Mensal De Caudal - Ano {{ selected_year }}
+                Evolução Mensal De Caudal - Ano {{ selected_year }}
             {% endif %}
         </h2>
         <canvas id="monthlyTotalChart"></canvas>
@@ -646,9 +647,9 @@
     <div class="chart-container">
         <h2>
             {% if comparison_mode %}
-                Distribuição Mensal de Caudal - Comparação
+                Distribuição Mensal De Caudal - Comparação
             {% else %}
-                Distribuição Mensal de Caudal - Ano {{ selected_year }}
+                Distribuição Mensal De Caudal - Ano {{ selected_year }}
             {% endif %}
         </h2>
         <canvas id="boxplotChart"></canvas>
@@ -659,9 +660,9 @@
     <div class="chart-container">
         <h2>
             {% if comparison_mode %}
-                Evolução Diária de Caudal - Comparação
+                Evolução Diária De Caudal - Comparação
             {% else %}
-                Evolução Diária de Caudal - Ano {{ selected_year }}
+                Evolução Diária De Caudal - Ano {{ selected_year }}
             {% endif %}
         </h2>
         <canvas id="dailyLineChart"></canvas>
@@ -671,7 +672,7 @@
     <!-- Complete Line Charts -->
     {% if data_type == 'normalized' or data_type == 'reconstruido' %}
     <div class="chart-container">
-        <h2>Evolução de Caudal</h2>
+        <h2>Evolução De Caudal</h2>
         <canvas id="linhaDiariaChartT" height="100"></canvas>
         <button onclick="resetZoom('linhaDiariaChartT')">Redefinir Zoom</button>
         <div style="margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 15px; align-items: end;">
@@ -977,15 +978,15 @@
                 },
                 y: {
                     beginAtZero: true,
-                    position: 'left',
+                    position: 'right',
                     title: { display: true, text: 'Volume (m³)', color: textColor },
                     ticks: { color: textColor }
                 },
                 y1: {
                     beginAtZero: true,
-                    position: 'right',
+                    position: 'left',
                     grid: { drawOnChartArea: false },
-                    title: { display: true, text: 'Média (m³/s)', color: textColor },
+                    title: { display: true, text: 'Caudal (m³/s)', color: textColor },
                     ticks: { color: textColor
                      }
                 }
@@ -1033,7 +1034,7 @@
                     },
                     { 
                         type: 'line', 
-                        label: 'Média (m³/s)', 
+                        label: 'Média Anual (m³/s)', 
                         data: avgValues, 
                         borderColor: '#0077b6', 
                         backgroundColor: 'rgba(0, 119, 182, 0.1)',
@@ -1092,7 +1093,7 @@
                     
                     datasets.push({
                         type: 'line',
-                        label: `${series.serie.nome} (${selectedYear}) - Média (m³/s)`,
+                        label: `${series.serie.nome} (${selectedYear}) - Média Anual (m³/s)`,
                         data: sortedYears.map(year => {
                             if (year === selectedYear) {
                                 return series.avg_values[yearIndex] || 0;
@@ -1249,7 +1250,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
 
                     datasets.push({
                         type: 'line',
-                            label: `${series.serie.nome} (${selectedYear}) - Média (m³/s)`,
+                            label: `${series.serie.nome} (${selectedYear}) - Média Anual (m³/s)`,
                             data: [{ x: selectedYear, y: series.avg_values[yearIndex] }],
                         borderColor: color.border,
                         backgroundColor: color.rgba,
@@ -1276,18 +1277,18 @@ document.getElementById("serie_id").addEventListener("change", function () {
                             data: series.month_totals,
                             backgroundColor: color.bg,
                             borderColor: color.border,
-                            yAxisID: 'y',
+                            yAxisID: 'y1',
                             order: 2
                         });
                         datasets.push({
                             type: 'line',
-                            label: `${series.serie.nome} (${selectedYear}) - Média (m³/s)`,
+                            label: `${series.serie.nome} (${selectedYear}) - Média Mensal (m³/s)`,
                             data: series.month_avg,
                             borderColor: color.border,
                             backgroundColor: color.rgba,
                             fill: true,
                             tension: 0.3,
-                            yAxisID: 'y1',
+                            yAxisID: 'y',
                             order: 1
                         });
                     }
@@ -1323,34 +1324,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
         const textColor = isDark ?'#ffffff':'#000000';
 
             chartConfigs = [
-                {
-                    id: 'monthlyAvgChart',
-                    config: {
-                        type: 'line',
-                        data: {
-                            labels: getComparisonLabels(),
-                            datasets: createComparisonDatasets('avg')
-                        },
-                        options: {
-                            responsive: true,
-                            scales: {
-                                x: {
-                                    title: { display: true, text: 'Mês', color: textColor },
-                                    ticks: { color: textColor }
-                                },
-                                y: {
-                                    beginAtZero: true,
-                                    title: { display: true, text: 'Média (m³/s)', color: textColor },
-                                    ticks: { color: textColor }
-                                }
-                            },
-                            plugins: {
-                                zoom: zoomConfigXY,
-                                tooltip: { mode: 'index', intersect: false }
-                            }
-                        }
-                    }
-                },
+                
                 {
                     id: 'monthlyTotalChart',
                     config: {
@@ -1369,7 +1343,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                                 y: {
                                     beginAtZero: true,
                                     position: 'left',
-                                    title: { display: true, text: 'Média (m³/s)', color: textColor },
+                                    title: { display: true, text: 'Caudal (m³/s)', color: textColor },
                                     ticks: { color: textColor }
                                 },
                                 y1: {
@@ -1393,47 +1367,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
         const isDark = document.body.classList.contains('dark-mode');
         const textColor = isDark ?'#ffffff':'#000000';
             chartConfigs = [
-                {
-                    id: 'monthlyAvgChart',
-                    config: {
-                        type: 'line',
-                        data: {
-                            labels: monthNames,
-                            datasets: [{
-                                label: 'Média (m³/s)',
-                                data: monthAvg,
-                                borderColor: '#0096c7',
-                                backgroundColor: 'rgba(0,150,199,0.2)',
-                                fill: true,
-                                tension: 0.3
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            
-                            scales: {
-                                x: {
-                                    title: { display: true, text: 'Mês', color: textColor },
-                                    ticks: { color: textColor }
-                                },
-                                y: {
-                                    beginAtZero: true,
-                                    title: {
-                                        display: true,
-                                        text: 'Caudal Médio (m³/s)',
-                                        color: textColor
-                                    },
-                                    ticks: { color:textColor }
-                                }
-                            },
-                            plugins: {
-                                zoom: zoomConfigXY,
-                                
-                                tooltip: { mode: 'index', intersect: false }
-                            }
-                        }
-                    }
-                },
+                
                 {
                     id: 'monthlyTotalChart',
                     config: {
@@ -1442,7 +1376,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                             labels: monthNames,
                             datasets: [
                                 { label: 'Volume (m³)', data: monthTotals, backgroundColor: '#90e0ef', yAxisID: 'y', order: 2 },
-                                { label: 'Média (m³/s)', data: monthAvg, type: 'line', borderColor: '#0077b6', backgroundColor: 'rgba(0,119,182,0.2)', fill: true, tension: 0.3, yAxisID: 'y1', order: 1 }
+                                { label: 'Média Mensal (m³/s)', data: monthAvg, type: 'line', borderColor: '#0077b6', backgroundColor: 'rgba(0,119,182,0.2)', fill: true, tension: 0.3, yAxisID: 'y1', order: 1 }
                             ]
                         },
                         options: {
@@ -1455,15 +1389,15 @@ document.getElementById("serie_id").addEventListener("change", function () {
                 },
                 y: {
                     beginAtZero: true,
-                    position: 'left',
+                    position: 'right',
                     title: { display: true, text: 'Volume (m³)', color: textColor},
                     ticks: { color: textColor }
                 },
                 y1: {
                     beginAtZero: true,
-                    position: 'right',
+                    position: 'left',
                     grid: { drawOnChartArea: false },
-                    title: { display: true, text: 'Média (m³/s)', color: textColor },
+                    title: { display: true, text: 'Caudal (m³/s)', color: textColor },
                     ticks: { color: textColor}
                 }
                             },
@@ -2288,7 +2222,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                             beginAtZero: true,
                             title: {
                                 display: true,
-                                text: 'Caudal Médio Diário (m³/s)',
+                                text: 'Caudal (m³/s)',
                                 color: textColor
                             },
                             ticks: { color: textColor },
@@ -2324,7 +2258,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                 const info = comparisonData[key];
                 if (info && info.data && info.data.labels && info.data.labels.length > 0) {
                     seriesInfoList.push({
-                        name: `${info.serie_name} (${info.year})`,
+                        name: `${info.serie_name} (${info.year}) - Média Diaria`,
                         labels: info.data.labels,
                         values: info.data.values
                     });
@@ -2375,12 +2309,12 @@ document.getElementById("serie_id").addEventListener("change", function () {
                     },
                     scales: {
                         x: {
-                            title: { display: true, text: 'Data', color: textColor },
+                            title: { display: true, text: 'Data (dia)', color: textColor },
                             ticks: { color: textColor, maxTicksLimit: 10 }
                         },
                         y: {
                             beginAtZero: true,
-                            title: { display: true, text: 'Caudal Médio Diário (m³/s)', color: textColor },
+                            title: { display: true, text: 'Caudal (m³/s)', color: textColor },
                             ticks: { color: textColor }
                         }
                     },
@@ -2413,7 +2347,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
     const isDark = document.body.classList.contains('dark-mode');
     const textColor = isDark ? '#ffffff' : '#000000';
 
-    ['monthlyAvgChart', 'monthlyTotalChart'].forEach(chartId => {
+    ['monthlyTotalChart'].forEach(chartId => {
         const chart = Chart.getChart(chartId);
         if (chart) {
             const scales = chart.options.scales;
@@ -2982,11 +2916,13 @@ async function exportarExcel() {
             const serieIds = Array.from(checkboxes).map(cb => cb.value);
             const tipo = document.getElementById('data_type').value;
             const metodo = document.getElementById('recon_method').value;
+            const ponto=document.getElementById('ponto_medicao').value;
 
             const params = new URLSearchParams();
             serieIds.forEach(id => params.append('serie_ids', id));
             params.append('data_type', tipo);
             params.append('recon_method', metodo);
+            params.append('ponto_id',ponto)
 
             serieIds.forEach(serieId => {
                 const yearCheckboxes = document.querySelectorAll(`input[name="years_${serieId}"]:checked`);
@@ -3001,11 +2937,14 @@ async function exportarExcel() {
             const tipo = document.getElementById('data_type').value;
             const metodo = document.getElementById('recon_method').value;
             const ano = document.getElementById('year').value;
+            const ponto=document.getElementById('ponto_medicao').value;
 
             const params = new URLSearchParams();
             params.append('serie_id', serie);
             params.append('data_type', tipo);
             params.append('recon_method', metodo);
+            params.append('ponto_id',ponto);
+
             if (ano) {
                 params.append(`years_${serie}`, ano);
             }
@@ -3062,7 +3001,7 @@ async function exportarExcel() {
         function exportarPDF() {
     showLoading();
     try {
-        const chartIds = ['yearlyChart','monthlyAvgChart','monthlyTotalChart','boxplotChart','dailyLineChart','linhaDiariaChartT'];
+        const chartIds = ['yearlyChart','monthlyTotalChart','boxplotChart','dailyLineChart','linhaDiariaChartT'];
         const images = chartIds.map(id => {
             const inst = chartInstances[id];
             if (inst && inst.canvas) {
@@ -3128,13 +3067,25 @@ async function exportarExcel() {
         })
         .then(resp => {
             if (!resp.ok) throw new Error('Erro ao gerar PDF');
+            respostaGlobal=resp;
             return resp.blob();
+
         })
         .then(blob => {
+            
+        // Extrair nome do ficheiro do header
+        let filename = "relatorio.xlsx";
+        const disposition = respostaGlobal.headers.get("Content-Disposition");
+        if (disposition && disposition.includes("filename=")) {
+            const match = disposition.match(/filename="?([^"]+)"?/);
+            if (match && match[1]) {
+                filename = match[1];
+            }
+        }
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = 'relatorio_dashboard.pdf';
+            link.download = filename;
             document.body.appendChild(link);
             link.click();
             link.remove();
@@ -4009,7 +3960,7 @@ console.log(comparisonInstantaneousData);
     return `${startStr} até ${endStr}`;
 };
 
-            let resultHTML = `<h4 style="margin-bottom: 1rem; color: #007bff;">📊 Estatísticas do Intervalo</h4>`;
+            let resultHTML = `<h4 style="margin-bottom: 1rem; color: #007bff;">📊 Estatísticas de caudal do intrevalo selecionado</h4>`;
             resultHTML += `<p><strong>Período:</strong> ${formatPeriod()}</p>`;
 
             

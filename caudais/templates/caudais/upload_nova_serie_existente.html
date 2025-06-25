@@ -161,7 +161,7 @@
 </head>
 <body>
 
-    <h1>Upload de Medições</h1>
+    <h1>Carregamento De Medições</h1>
     
     <div id="loading-spinner" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); font-size:24px; color:#0077b6; z-index:9999;">
         <i class="fas fa-spinner fa-spin"></i> Carregando...
@@ -192,7 +192,7 @@
     <form id="upload-form" method="POST" enctype="multipart/form-data">
         {% csrf_token %}
 
-        <h2>Modo de Upload</h2>
+        <h2>Modo de Carregamento</h2>
         <div class="radio-group">
             {% for radio in selection_form.modo %}
                 <label class="radio-option">
@@ -219,7 +219,23 @@
 
 
 
-        <h2>Upload de ficheiro excel</h2>
+        <h2>Carregamento de Ficheiro Excel</h2>
+         <div style="margin-bottom: 20px;">
+    <a href="{% url 'caudais:exemplo_excel' %}" target="_blank">
+        <button type="button" style="
+            background-color: var(--azul-claro);
+            color: #000;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        ">
+            📥 Baixar exemplo válido excel
+        </button>
+    </a>
+</div>
         {{ arquivo_form.as_p }}
 
 

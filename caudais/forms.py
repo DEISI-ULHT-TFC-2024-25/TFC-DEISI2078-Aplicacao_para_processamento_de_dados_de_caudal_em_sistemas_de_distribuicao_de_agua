@@ -33,7 +33,7 @@ class PontoMedidaForm(forms.Form):
 
 class ArquivoExcelForm(forms.Form):
     arquivo_excel = forms.FileField(
-        label='Arquivo Excel',
+        label='Ficheiro Excel',
         widget=forms.ClearableFileInput(attrs={'placeholder': 'Selecione um arquivo Excel'})
     )
 

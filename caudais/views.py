@@ -1729,8 +1729,15 @@ def exportar_excel(request):
     serie_id = request.GET.get('serie_id')  
     data_type = request.GET.get('data_type', 'raw')
     metodo = request.GET.get('recon_method', 'jq')
-    
-    
+    ponto_medicao_id=request.GET.get('ponto_id')
+    ponto_medicao_obj = None
+    if ponto_medicao_id:
+        try:
+            ponto_medicao_obj = PontoMedida.objects.get(id=int(ponto_medicao_id))
+        except PontoMedida.DoesNotExist:
+            pass
+
+
     series_years = {}
     for param_name, param_values in request.GET.lists():
         if param_name.startswith('years_') and param_values:
@@ -1792,10 +1799,10 @@ def exportar_excel(request):
 
         if data_type == "reconstruido":
             filename_year = f"_{'_'.join(map(str, year_filter))}" if year_filter else ""
-            nome_arquivo = f"medicoes_{data_type}_{metodo}_{serie.nome}{filename_year}.xlsx"
+            nome_arquivo = f"{ponto_medicao_obj.regiao.nome}-{ponto_medicao_obj.regiao.localidade}_{data_type}_{metodo}_{serie.nome}{filename_year}.xlsx"
         else:
             filename_year = f"_{'_'.join(map(str, year_filter))}" if year_filter else ""
-            nome_arquivo = f"medicoes_{data_type}_{serie.nome}{filename_year}.xlsx"
+            nome_arquivo = f"{ponto_medicao_obj.regiao.nome}-{ponto_medicao_obj.regiao.localidade}_{data_type}_{serie.nome}{filename_year}.xlsx"
 
         response['Content-Disposition'] = f'attachment; filename="{nome_arquivo}"'
 
@@ -1817,9 +1824,9 @@ def exportar_excel(request):
             years_str = f"_anos{'_'.join(map(str, unique_years))}"
         
         if data_type == "reconstruido":
-            nome_arquivo = f"comparacao_{data_type}_{metodo}_series{years_str}.xlsx"
+            nome_arquivo = f"{ponto_medicao_obj.regiao.nome}-{ponto_medicao_obj.regiao.localidade}_{data_type}_{metodo}_series{years_str}.xlsx"
         else:
-            nome_arquivo = f"comparacao_{data_type}_series{years_str}.xlsx"
+            nome_arquivo = f"{ponto_medicao_obj.regiao.nome}-{ponto_medicao_obj.regiao.localidade}_comparacao_{data_type}_series{years_str}.xlsx"
             
         response['Content-Disposition'] = f'attachment; filename="{nome_arquivo}"'
 
@@ -1858,8 +1865,8 @@ def exportar_excel(request):
                     df.rename(columns={'timestamp': 'Data', 'valor': f'Caudal'}, inplace=True)
                     
                     
-                    sheet_name_year = f"_{'_'.join(map(str, year_filter))}" if year_filter else ""
-                    sheet_name = f"Serie_{serie.id}_{serie.nome}{sheet_name_year}"[:31]  
+                    sheet_name_year = f"{'_'.join(map(str, year_filter))}" if year_filter else ""
+                    sheet_name = f"Serie_{serie.nome}({sheet_name_year})"[:31]  
                     df.to_excel(writer, index=False, sheet_name=sheet_name)
 
         return response
@@ -2033,6 +2040,7 @@ def exportar_pdf(request):
             fontSize=14,
             spaceAfter=12,
             spaceBefore=20,
+            alignment=TA_CENTER,
             textColor=colors.HexColor('#0077b6')
         )
         heading_style2 = ParagraphStyle(
@@ -2125,7 +2133,7 @@ def exportar_pdf(request):
                     
                     annual_table_data = [
                         ['Estatística', 'Valor'],
-                        ['Total Anual (L)', f"{annual_data['total']:.2f}" if annual_data['total'] else "0.00"],
+                        ['Total Anual (m³)', f"{annual_data['total']:.2f}" if annual_data['total'] else "0.00"],
                         ['Contagem', str(annual_data['count'] or 0)],
                         ['Média (m³/s)', f"{annual_data['avg']:.3f}" if annual_data['avg'] else "0.000"],
                         ['Mínimo (m³/s)', f"{annual_data['min_val']:.3f}" if annual_data['min_val'] else "0.000"],
@@ -2144,7 +2152,11 @@ def exportar_pdf(request):
                         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                     ]))
                     story.append(KeepTogether([
-                    Paragraph("Estatísticas Anuais", styles['Heading3']),
+                    Paragraph("Estatísticas Anuais", ParagraphStyle(
+                    name='CenteredHeading3',
+                    parent=styles['Heading3'],
+                    alignment=TA_CENTER
+                    )),
                     annual_table,
                     Spacer(1, 20)
 
@@ -2163,7 +2175,7 @@ def exportar_pdf(request):
                     month_names = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
                                  'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
                     
-                    monthly_table_data = [['Mês', 'Total (L)', 'Contagem', 'Média (m³/s)']]
+                    monthly_table_data = [['Mês', 'Total (m³)', 'Contagem', 'Média (m³/s)']]
                     monthly_lookup = {entry['month']: entry for entry in monthly_data}
                     
                     for m in range(1, 13):
@@ -2191,7 +2203,11 @@ def exportar_pdf(request):
                         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                     ]))
                     story.append(KeepTogether([
-                    Paragraph("Estatísticas Mensais", styles['Heading3']),
+                    Paragraph("Estatísticas Mensais", ParagraphStyle(
+                    name='CenteredHeading3',
+                    parent=styles['Heading3'],
+                    alignment=TA_CENTER
+                    )),
                     monthly_table,
                     Spacer(1, 20)
 
@@ -2237,7 +2253,11 @@ def exportar_pdf(request):
                         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                     ]))
                         story.append(KeepTogether([
-                        Paragraph("Estatísticas de Distribuição (Quartis)", styles['Heading3']),
+                        Paragraph("Estatísticas de Distribuição (Quartis)", ParagraphStyle(
+                        name='CenteredHeading3',
+                        parent=styles['Heading3'],
+                        alignment=TA_CENTER
+                        )),
                         boxplot_table,
                         Spacer(1, 20)
 
@@ -2321,12 +2341,11 @@ def exportar_pdf(request):
             story.append(Spacer(1, 20))
             
             chart_titles = {
-                'yearlyChart': 'Evolução Anual de Caudais',
-                'monthlyAvgChart': 'Caudal Médio por Mês',
-                'monthlyTotalChart': 'Volume Total Mensal',
-                'boxplotChart': 'Distribuição Mensal de Caudal',
-                'dailyLineChart': 'Evolução Diária de Caudal',
-                'linhaDiariaChartT': 'Evolução de Caudal'
+                'yearlyChart': 'Evolução Anual De Caudal',
+                'monthlyTotalChart': 'Evolução Mensal De Caudal',
+                'boxplotChart': 'Distribuição Mensal De Caudal',
+                'dailyLineChart': 'Evolução Diária De Caudal',
+                'linhaDiariaChartT': 'Evolução De Caudal'
             }
             
             for img in images:
@@ -2368,15 +2387,75 @@ def exportar_pdf(request):
                 ]))
                 
                 story.append(Spacer(1, 20))
+                
         
         doc.build(story)
         buffer.seek(0)
+        import re
+
+
+        regiao = ponto_medicao_obj.regiao.nome if ponto_medicao_obj else "Regiao"
+        localidade = ponto_medicao_obj.regiao.localidade if ponto_medicao_obj else "Localidade"
+
+        if data_type == "raw":
+            tipo_label = "raw"
+        elif data_type == "normalized":
+            tipo_label = "normalized"
+        elif data_type == "reconstruido":
+            tipo_label = f"reconstruido_{recon_method}"
+        else:
+            tipo_label = "tipo_desconhecido"
+
+        # Anos
+        anos = []
+        if comparison_mode and series_years:
+            for lista in series_years.values():
+                anos.extend(lista)
+        elif selected_year:
+            anos.append(selected_year)
+        anos_str = f"_{'_'.join(map(str, sorted(set(anos))))}" if anos else ""
+
+        # Nome completo
+        nome_arquivo = f"{regiao}-{localidade}_{tipo_label}{anos_str}.pdf"
+
+        # Sanear o nome do ficheiro (retirar espaços e caracteres ilegais)
+        nome_arquivo = re.sub(r'[:\\/*?\"<>|]', "", nome_arquivo).replace(" ", "_")
+
+
         
         response = HttpResponse(buffer, content_type='application/pdf')
-        response['Content-Disposition'] = 'attachment; filename="relatorio_dashboard.pdf"'
+        response['Content-Disposition'] = f'attachment; filename="{nome_arquivo}"'
         return response
 
     except Exception as exc:
         import traceback
         traceback.print_exc()
         return HttpResponse(f"Erro ao gerar PDF: {exc}", status=500)
+
+from django.http import HttpResponse
+from openpyxl import Workbook
+
+def exemplo_excel(request):
+    
+    # Criar workbook e sheet
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Exemplo Medições"
+
+    # Cabeçalhos
+    ws.append(["Data", "Caudal"])
+
+    # Dados fictícios de exemplo
+    ws.append(["02/07/2013 17:11:00","70,1"])
+    ws.append(["02/07/2013 17:12:00","NA"])
+    ws.append(["01/08/2013 18:14:00","70,6"])
+
+    # Criar resposta HTTP
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response['Content-Disposition'] = 'attachment; filename=exemplo_medicoes.xlsx'
+    
+    # Guardar o ficheiro no response
+    wb.save(response)
+    return response

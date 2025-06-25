@@ -15,5 +15,5 @@ urlpatterns = [
     path('upload/', views.upload_novo_ponto, name='upload_novo_ponto'),
     path('upload/nova-serie/', views.upload_nova_serie, name='upload_nova_serie'),
     path('upload/adicionar-valores/', views.upload_adicionar_valores, name='upload_adicionar_valores'),
-
+    path('exemplo_excel/', views.exemplo_excel, name='exemplo_excel'),
 ]
