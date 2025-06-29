@@ -277,8 +277,8 @@
               color: white;
               border: none;
               border-radius: 8px;
-              width: 40px;
-              height: 40px;
+              width: 35px;
+              height: 35px;
               display: flex;
               align-items: center;
               justify-content: center;
@@ -492,8 +492,8 @@
 <body>
     <!-- Menu Toggle Button (fixed position with relative container for dropdown) -->
     <div style="position: fixed; top: 20px; right: 20px; z-index: 2000; margin-top: -10px">
-        <div class="menu-toggle" onclick="toggleMenu()" style="position: relative;">
-            <i class="fas fa-bars"></i>
+        <div class="menu-toggle" onclick="toggleMenu()" style="position: relative;; padding:0 30px;">
+            <i class="fas fa-bars"></i><span style="padding-left:10px"> Menu</span>
         </div>
         <!-- Menu Dropdown -->
         <div class="dropdown-menu" id="dropdownMenu">
@@ -514,6 +514,13 @@
 
 
             <a href="#" onclick="toggleTheme()"><i class="fas fa-adjust"></i> Modo Claro/Escuro</a>
+            <div style="color: var(--azul-primario); padding:10px 18px 0;">
+                <i class="fas fa-user"></i> 
+                <strong>{{ request.user.username }}</strong>
+                {% if request.user.first_name %}
+                    ({{ request.user.first_name }} {{ request.user.last_name }})
+                {% endif %}
+            </div>
             <a href="{% url 'autenticacao:logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a>
         </div>
     </div>
@@ -526,15 +533,7 @@
                 Dashboard de Medições
             </h1>
         </div>
-        <div style="display: flex; align-items: center; gap: 1rem; margin-right: 45px">
-            <div style="color: var(--azul-primario); font-size: 0.9rem;">
-                <i class="fas fa-user"></i> 
-                <strong>{{ request.user.username }}</strong>
-                {% if request.user.first_name %}
-                    ({{ request.user.first_name }} {{ request.user.last_name }})
-                {% endif %}
-            </div>
-        </div>
+       
     </div>
     <div id="loading-spinner" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); font-size:24px; color:#0077b6;">
         <i class="fas fa-spinner fa-spin"></i> Carregando...
@@ -874,7 +873,7 @@
         const tooltipCallback = context => {
             const label = context.dataset.label || '';
             const value = context.parsed.y;
-            const unidade = label.includes("Volume") ? "m³" : " m³/s";
+            const unidade = label.includes("Volume") ? "m³" : " m³/h";
             return `${label}: ${value}${unidade}`;
         };
 //linhaTemporalLabelsT.forEach((label, i) => {
@@ -986,7 +985,7 @@
                     beginAtZero: true,
                     position: 'left',
                     grid: { drawOnChartArea: false },
-                    title: { display: true, text: 'Caudal (m³/s)', color: textColor },
+                    title: { display: true, text: 'Caudal (m³/h)', color: textColor },
                     ticks: { color: textColor
                      }
                 }
@@ -1034,7 +1033,7 @@
                     },
                     { 
                         type: 'line', 
-                        label: 'Média Anual (m³/s)', 
+                        label: 'Média Anual (m³/h)', 
                         data: avgValues, 
                         borderColor: '#0077b6', 
                         backgroundColor: 'rgba(0, 119, 182, 0.1)',
@@ -1093,7 +1092,7 @@
                     
                     datasets.push({
                         type: 'line',
-                        label: `${series.serie.nome} (${selectedYear}) - Média Anual (m³/s)`,
+                        label: `${series.serie.nome} (${selectedYear}) - Média Anual (m³/h)`,
                         data: sortedYears.map(year => {
                             if (year === selectedYear) {
                                 return series.avg_values[yearIndex] || 0;
@@ -1250,7 +1249,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
 
                     datasets.push({
                         type: 'line',
-                            label: `${series.serie.nome} (${selectedYear}) - Média Anual (m³/s)`,
+                            label: `${series.serie.nome} (${selectedYear}) - Média Anual (m³/h)`,
                             data: [{ x: selectedYear, y: series.avg_values[yearIndex] }],
                         borderColor: color.border,
                         backgroundColor: color.rgba,
@@ -1263,7 +1262,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                 } else {
                     if (dataType === 'avg') {
                         datasets.push({
-                            label: `${series.serie.nome} (${selectedYear}) - Média (m³/s)`,
+                            label: `${series.serie.nome} (${selectedYear}) - Média (m³/h)`,
                             data: series.month_avg,
                             borderColor: color.border,
                             backgroundColor: color.rgba,
@@ -1282,7 +1281,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                         });
                         datasets.push({
                             type: 'line',
-                            label: `${series.serie.nome} (${selectedYear}) - Média Mensal (m³/s)`,
+                            label: `${series.serie.nome} (${selectedYear}) - Média Mensal (m³/h)`,
                             data: series.month_avg,
                             borderColor: color.border,
                             backgroundColor: color.rgba,
@@ -1343,7 +1342,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                                 y: {
                                     beginAtZero: true,
                                     position: 'left',
-                                    title: { display: true, text: 'Caudal (m³/s)', color: textColor },
+                                    title: { display: true, text: 'Caudal (m³/h)', color: textColor },
                                     ticks: { color: textColor }
                                 },
                                 y1: {
@@ -1376,7 +1375,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                             labels: monthNames,
                             datasets: [
                                 { label: 'Volume (m³)', data: monthTotals, backgroundColor: '#90e0ef', yAxisID: 'y', order: 2 },
-                                { label: 'Média Mensal (m³/s)', data: monthAvg, type: 'line', borderColor: '#0077b6', backgroundColor: 'rgba(0,119,182,0.2)', fill: true, tension: 0.3, yAxisID: 'y1', order: 1 }
+                                { label: 'Média Mensal (m³/h)', data: monthAvg, type: 'line', borderColor: '#0077b6', backgroundColor: 'rgba(0,119,182,0.2)', fill: true, tension: 0.3, yAxisID: 'y1', order: 1 }
                             ]
                         },
                         options: {
@@ -1397,7 +1396,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                     beginAtZero: true,
                     position: 'left',
                     grid: { drawOnChartArea: false },
-                    title: { display: true, text: 'Caudal (m³/s)', color: textColor },
+                    title: { display: true, text: 'Caudal (m³/h)', color: textColor },
                     ticks: { color: textColor}
                 }
                             },
@@ -1537,8 +1536,32 @@ document.getElementById("serie_id").addEventListener("change", function () {
                             }
                         },
                         tooltip: {
-                            intersect: true,
-                            mode: 'nearest'
+                            intersect: false,
+                            mode: 'nearest',
+                            callbacks: {
+                                title: function(context) {
+                                    return `Mês: ${context[0].label}`;
+                                },
+                                label: function(context) {
+                                    const dataset = context.dataset;
+                                    const value = context.parsed.y;
+                                    
+                                    if (dataset.type === 'scatter') {
+                                        return `${dataset.label}: ${value.toFixed(3)} m³/h (Outlier)`;
+                                    } else {
+                                        const dataPoint = context.parsed;
+                                        return [
+                                            `${dataset.label}:`,
+                                            `  Min: ${dataPoint.min?.toFixed(3) || 'N/A'} m³/h`,
+                                            `  Q1: ${dataPoint.q1?.toFixed(3) || 'N/A'} m³/h`,
+                                            `  Mediana: ${dataPoint.median?.toFixed(3) || 'N/A'} m³/h`,
+                                            `  Média: ${dataPoint.mean?.toFixed(3) || 'N/A'} m³/h`,
+                                            `  Q3: ${dataPoint.q3?.toFixed(3) || 'N/A'} m³/h`,
+                                            `  Max: ${dataPoint.max?.toFixed(3) || 'N/A'} m³/h`
+                                        ];
+                                    }
+                                }
+                            }
                         },
                         zoom: zoomConfigXY
                     },
@@ -1555,7 +1578,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                             beginAtZero: true,
                             title: {
                                 display: true,
-                                text: 'Caudal (m³/s)',
+                                text: 'Caudal (m³/h)',
                                 color: textColor
                             },
                             ticks: { color: textColor }
@@ -1698,17 +1721,17 @@ document.getElementById("serie_id").addEventListener("change", function () {
                                     const value = context.parsed.y;
                                     
                                     if (dataset.type === 'scatter') {
-                                        return `${dataset.label}: ${value.toFixed(3)} m³/s (Outlier)`;
+                                        return `${dataset.label}: ${value.toFixed(3)} m³/h (Outlier)`;
                                     } else {
                                         const dataPoint = context.parsed;
                                         return [
                                             `${dataset.label}:`,
-                                            `  Min: ${dataPoint.min?.toFixed(3) || 'N/A'} m³/s`,
-                                            `  Q1: ${dataPoint.q1?.toFixed(3) || 'N/A'} m³/s`,
-                                            `  Mediana: ${dataPoint.median?.toFixed(3) || 'N/A'} m³/s`,
-                                            `  Média: ${dataPoint.mean?.toFixed(3) || 'N/A'} m³/s`,
-                                            `  Q3: ${dataPoint.q3?.toFixed(3) || 'N/A'} m³/s`,
-                                            `  Max: ${dataPoint.max?.toFixed(3) || 'N/A'} m³/s`
+                                            `  Min: ${dataPoint.min?.toFixed(3) || 'N/A'} m³/h`,
+                                            `  Q1: ${dataPoint.q1?.toFixed(3) || 'N/A'} m³/h`,
+                                            `  Mediana: ${dataPoint.median?.toFixed(3) || 'N/A'} m³/h`,
+                                            `  Média: ${dataPoint.mean?.toFixed(3) || 'N/A'} m³/h`,
+                                            `  Q3: ${dataPoint.q3?.toFixed(3) || 'N/A'} m³/h`,
+                                            `  Max: ${dataPoint.max?.toFixed(3) || 'N/A'} m³/h`
                                         ];
                                     }
                                 }
@@ -1736,7 +1759,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                             beginAtZero: true,
                             title: {
                                 display: true,
-                                text: 'Caudal (m³/s)',
+                                text: 'Caudal (m³/h)',
                                 color: textColor,
                                 font: { size: 14 }
                             },
@@ -1744,7 +1767,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                                 color: textColor,
                                 font: { size: 12 },
                                 callback: function(value) {
-                                    return value.toFixed(2) + ' m³/s';
+                                    return value.toFixed(2) + ' m³/h';
                                 }
                             },
                             grid: {
@@ -1898,9 +1921,9 @@ document.getElementById("serie_id").addEventListener("change", function () {
                                 label: function(context) {
                                     const value = context.parsed.y;
                                     if (context.dataset.label.includes('Outlier')) {
-                                        return `${context.dataset.label}: ${value.toFixed(3)} m³/s`;
+                                        return `${context.dataset.label}: ${value.toFixed(3)} m³/h`;
                                     } else {
-                                        return `${context.dataset.label}: ${value.toFixed(3)} m³/s`;
+                                        return `${context.dataset.label}: ${value.toFixed(3)} m³/h`;
                                     }
                                 }
                             }
@@ -1927,7 +1950,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                             beginAtZero: true,
                             title: {
                                 display: true,
-                                text: 'Caudal (m³/s)',
+                                text: 'Caudal (m³/h)',
                                 color: textColor,
                                 font: { size: 14 }
                             },
@@ -1935,7 +1958,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                                 color: textColor,
                                 font: { size: 12 },
                                 callback: function(value) {
-                                    return value.toFixed(2) + ' m³/s';
+                                    return value.toFixed(2) + ' m³/h';
                                 }
                             },
                             grid: {
@@ -2120,7 +2143,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                             beginAtZero: true,
                             title: {
                                 display: true,
-                                text: 'Caudal (m³/s)',
+                                text: 'Caudal (m³/h)',
                                 color: textColor,
                                 font: { size: 14 }
                             },
@@ -2128,7 +2151,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                                 color: textColor,
                                 font: { size: 12 },
                                 callback: function(value) {
-                                    return value.toFixed(2) + ' m³/s';
+                                    return value.toFixed(2) + ' m³/h';
                                 }
                             },
                             grid: {
@@ -2179,7 +2202,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                 data: {
                     labels: lineChartData.labels,
                     datasets: [{
-                        label: 'Média Diária (m³/s)',
+                        label: 'Média Diária (m³/h)',
                         data: lineChartData.values,
                         borderColor: '#0077b6',
                         backgroundColor: 'rgba(0, 119, 182, 0.1)',
@@ -2222,7 +2245,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                             beginAtZero: true,
                             title: {
                                 display: true,
-                                text: 'Caudal (m³/s)',
+                                text: 'Caudal (m³/h)',
                                 color: textColor
                             },
                             ticks: { color: textColor },
@@ -2314,7 +2337,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                         },
                         y: {
                             beginAtZero: true,
-                            title: { display: true, text: 'Caudal (m³/s)', color: textColor },
+                            title: { display: true, text: 'Caudal (m³/h)', color: textColor },
                             ticks: { color: textColor }
                         }
                     },
@@ -2800,6 +2823,7 @@ document.getElementById("serie_id").addEventListener("change", function () {
                     `;
                 }
             }
+            
         }
 
         function hideLoading() {
@@ -3425,7 +3449,7 @@ async function exportarExcel() {
                     data: {
                         labels: linhaTemporalLabels,
                         datasets: [{
-                            label: 'Caudal Médio Diário (m³/s)',
+                            label: 'Caudal Médio Diário (m³/h)',
                             data: linhaTemporalValores,
                             fill: false,
                             borderColor: 'rgba(0, 123, 255, 0.8)',
@@ -3461,7 +3485,7 @@ async function exportarExcel() {
                                 }
                             },
                             y: {
-                                title: { display: true, text: 'Caudal (m³/s)', color: textColor },
+                                title: { display: true, text: 'Caudal (m³/h)', color: textColor },
                                 beginAtZero: true,
                                 ticks: { color: textColor }
                             }
@@ -3485,7 +3509,7 @@ async function exportarExcel() {
                     data: {
                         labels: linhaTemporalLabelsT,
                         datasets: [{
-                            label: 'Caudal (m³/s)',
+                            label: 'Caudal (m³/h)',
                             data: linhaTemporalValoresT,
                             fill: false,
                             borderColor: 'rgba(220, 53, 69, 0.8)',
@@ -3550,7 +3574,7 @@ async function exportarExcel() {
                                 }
                             },
                             y: {
-                                title: { display: true, text: 'Caudal (m³/s)', color: textColor },
+                                title: { display: true, text: 'Caudal (m³/h)', color: textColor },
                                 beginAtZero: true,
                                 ticks: { 
                                     color: textColor,
@@ -3703,7 +3727,7 @@ async function exportarExcel() {
                                 }
                             },
                             y: {
-                                title: { display: true, text: 'Caudal Médio Diário (m³/s)', color: textColor },
+                                title: { display: true, text: 'Caudal Médio Diário (m³/h)', color: textColor },
                                 beginAtZero: true,
                                 ticks: { color: textColor }
                             }
@@ -3765,7 +3789,7 @@ async function exportarExcel() {
                     data: {
                         labels: sortedInstantaneousLabels,
                         datasets: [{
-                            label: 'Caudal (m³/s)',
+                            label: 'Caudal (m³/h)',
                             data: combinedInstantaneousValues,
                             borderColor: '#0077b6',
                             backgroundColor: 'rgba(0,119,182,0.15)',
@@ -3836,7 +3860,7 @@ async function exportarExcel() {
                                 }
                             },
                             y: {
-                                title: { display: true, text: 'Caudal (m³/s)', color: textColor },
+                                title: { display: true, text: 'Caudal (m³/h)', color: textColor },
                                 beginAtZero: true,
                                 ticks: { 
                                     color: textColor,
@@ -4016,13 +4040,13 @@ console.log(comparisonInstantaneousData);
                                     <p style="margin: 0 0 0.5rem 0; font-size: 12px; color: #6c757d;"><em>Período: ${formatPeriod()}</em></p>
                                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; font-size: 14px;">
                                         <p><strong>Número de Medições:</strong> ${dados.length.toLocaleString()}</p>
-                                        <p><strong>Média:</strong> ${media.toFixed(3)} m³/s</p>
-                                        <p><strong>Máximo:</strong> ${max.toFixed(3)} m³/s</p>
-                                        <p><strong>Mínimo:</strong> ${min.toFixed(3)} m³/s</p>
-                                        <p><strong>Mediana:</strong> ${mediana.toFixed(3)} m³/s</p>
-                                        <p><strong>Amplitude:</strong> ${(max - min).toFixed(3)} m³/s</p>
-                                        <p><strong>Desvio Padrão:</strong> ${desvioPadrao.toFixed(3)} m³/s</p>
-                                        <p><strong>Variância:</strong> ${variancia.toFixed(3)} (m³/s)²</p>
+                                        <p><strong>Média:</strong> ${media.toFixed(3)} m³/h</p>
+                                        <p><strong>Máximo:</strong> ${max.toFixed(3)} m³/h</p>
+                                        <p><strong>Mínimo:</strong> ${min.toFixed(3)} m³/h</p>
+                                        <p><strong>Mediana:</strong> ${mediana.toFixed(3)} m³/h</p>
+                                        <p><strong>Amplitude:</strong> ${(max - min).toFixed(3)} m³/h</p>
+                                        <p><strong>Desvio Padrão:</strong> ${desvioPadrao.toFixed(3)} m³/h</p>
+                                        <p><strong>Variância:</strong> ${variancia.toFixed(3)} (m³/h)²</p>
                                     </div>
                                 </div>
                             `;
@@ -4070,13 +4094,13 @@ console.log(comparisonInstantaneousData);
                             <h5 style="margin-bottom: 0.5rem; color: #343a40;">Estatísticas Globais (todas as séries)</h5>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; font-size: 14px;">
                                 <p><strong>Número de Medições:</strong> ${combinedValues.length.toLocaleString()}</p>
-                                <p><strong>Média:</strong> ${mediaG.toFixed(3)} m³/s</p>
-                                <p><strong>Máximo:</strong> ${maxG.toFixed(3)} m³/s</p>
-                                <p><strong>Mínimo:</strong> ${minG.toFixed(3)} m³/s</p>
-                                <p><strong>Mediana:</strong> ${medianaG.toFixed(3)} m³/s</p>
-                                <p><strong>Amplitude:</strong> ${(maxG - minG).toFixed(3)} m³/s</p>
-                                <p><strong>Desvio Padrão:</strong> ${desvioPadraoG.toFixed(3)} m³/s</p>
-                                <p><strong>Variância:</strong> ${varianciaG.toFixed(3)} (m³/s)²</p>
+                                <p><strong>Média:</strong> ${mediaG.toFixed(3)} m³/h</p>
+                                <p><strong>Máximo:</strong> ${maxG.toFixed(3)} m³/h</p>
+                                <p><strong>Mínimo:</strong> ${minG.toFixed(3)} m³/h</p>
+                                <p><strong>Mediana:</strong> ${medianaG.toFixed(3)} m³/h</p>
+                                <p><strong>Amplitude:</strong> ${(maxG - minG).toFixed(3)} m³/h</p>
+                                <p><strong>Desvio Padrão:</strong> ${desvioPadraoG.toFixed(3)} m³/h</p>
+                                <p><strong>Variância:</strong> ${varianciaG.toFixed(3)} (m³/h)²</p>
                             </div>
                         </div>
                     `;
@@ -4125,13 +4149,13 @@ console.log(comparisonInstantaneousData);
                         ">
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; font-size: 14px;">
                                 <p><strong>Número de Medições:</strong> ${dados.length.toLocaleString()}</p>
-                                <p><strong>Média:</strong> ${media.toFixed(3)} m³/s</p>
-                                <p><strong>Máximo:</strong> ${max.toFixed(3)} m³/s</p>
-                                <p><strong>Mínimo:</strong> ${min.toFixed(3)} m³/s</p>
-                                <p><strong>Mediana:</strong> ${mediana.toFixed(3)} m³/s</p>
-                                <p><strong>Amplitude:</strong> ${(max - min).toFixed(3)} m³/s</p>
-                                <p><strong>Desvio Padrão:</strong> ${desvioPadrao.toFixed(3)} m³/s</p>
-                                <p><strong>Variância:</strong> ${variancia.toFixed(3)} (m³/s)²</p>
+                                <p><strong>Média:</strong> ${media.toFixed(3)} m³/h</p>
+                                <p><strong>Máximo:</strong> ${max.toFixed(3)} m³/h</p>
+                                <p><strong>Mínimo:</strong> ${min.toFixed(3)} m³/h</p>
+                                <p><strong>Mediana:</strong> ${mediana.toFixed(3)} m³/h</p>
+                                <p><strong>Amplitude:</strong> ${(max - min).toFixed(3)} m³/h</p>
+                                <p><strong>Desvio Padrão:</strong> ${desvioPadrao.toFixed(3)} m³/h</p>
+                                <p><strong>Variância:</strong> ${variancia.toFixed(3)} (m³/h)²</p>
                             </div>
                         </div>
                     `;

@@ -1,3 +1,4 @@
+from collections import defaultdict
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.http import JsonResponse
@@ -34,8 +35,14 @@ import uuid
 import os
 
 def home(request):
+    if request.user.is_authenticated:
+        pontos_medicao = PontoMedida.objects.filter(user=request.user).select_related('regiao').all()
+    else:
+        pontos_medicao = [] 
+
     
-    pontos_medicao = PontoMedida.objects.select_related('regiao').all()
+   
+    
     monitoring_points = []
 
     for ponto in pontos_medicao:
@@ -54,7 +61,7 @@ def home(request):
             if latest:
                 if not latest_measurement or latest.timestamp > latest_measurement.timestamp:
                     latest_measurement = latest
-                    latest_flow = f"{latest.valor:.2f} m3/s" if latest.valor else "N/A"
+                    latest_flow = f"{latest.valor:.2f} m³/h" if latest.valor else "N/A"
         if total_measurements == 0:
             status = "low"
         elif total_measurements < 100:
@@ -425,10 +432,69 @@ def upload_adicionar_valores(request):
         'adicionar_Valores_serie_form':adicionar_Valores_serie_form,
         'arquivo_form': arquivo_form
     })
+def calculate_volume_irregular_intreval(queryset):
+    """
+    Calculates volume per year and month from irregularly spaced flow (m³/h) measurements.
+    Fills in missing months with 0.0.
+    
+    Returns:
+        dict like: {2023: {1: volume_jan, 2: volume_feb, ..., 12: volume_dec}, ...}
+    """
+    medicoes = list(queryset.order_by('timestamp'))
+    volumes = defaultdict(lambda: defaultdict(float))
+
+    for i in range(len(medicoes) - 1):
+        current = medicoes[i]
+        next_med = medicoes[i + 1]
+
+        if current.valor is not None:
+            delta_hours = (next_med.timestamp - current.timestamp).total_seconds() / 3600
+            volume = current.valor * delta_hours  # m³
+
+            year = current.timestamp.year
+            month = current.timestamp.month
+            volumes[year][month] += volume
+
+    # Ensure all 12 months are included for each year
+    for year in volumes:
+        for month in range(1, 13):
+            volumes[year][month] = round(volumes[year].get(month, 0.0), 2)
+
+    return dict(volumes)
 
 
+def calculate_volume_regular_interval(df, interval_minutes=15):
+    """
+    Calcula o volume por ano e mês a partir de uma série contínua com intervalos regulares (ex: 15 minutos).
+    """
+    volumes = defaultdict(lambda: defaultdict(float))
+    interval_hours = interval_minutes / 60
 
+    if df.empty:
+        return volumes
 
+    df = df.dropna(subset=['valor'])
+    df = df.copy()
+    df['year'] = df.index.year
+    df['month'] = df.index.month
+
+    grouped = df.groupby(['year', 'month'])['valor'].sum()
+
+    for (year, month), flow_sum in grouped.items():
+        volumes[year][month] = round(flow_sum * interval_hours, 2)
+
+    # Preenche meses ausentes com 0.0
+    for year in volumes:
+        for m in range(1, 13):
+            volumes[year][m] = volumes[year].get(m, 0.0)
+
+    return volumes
+
+def calculate_volume(queryset, is_continuous=False):
+    if is_continuous:
+        return calculate_volume_regular_interval(queryset)
+    else:
+        return calculate_volume_irregular_intreval(queryset)
 
 @login_required(login_url='/autenticacao/login/')
 def dashboard(request):
@@ -546,9 +612,10 @@ def dashboard(request):
             for year_to_process in selected_years_for_serie:
                 years, counts, totals, avg_values = [], [], [], []
                 month_labels, month_counts, month_totals, month_avg = [], [], [], []
-                
+                yearly_data={}
                 
                 if data_type == 'raw':
+                    volume_data={}
                     
                     estatisticas_anuais = EstatisticaAnual.objects.filter(
                         serie=selected_serie,
@@ -562,20 +629,23 @@ def dashboard(request):
                             totals.append(e.total)
                             counts.append(e.contagem)
                             avg_values.append(e.media)
-                    else:       
-                        yearly_data = Medicao.objects.filter(
-                            serie=selected_serie,
-                            timestamp__year=year_to_process
-                        ).aggregate(
-                            total_valor=Sum('valor'), 
-                            count=Count('id'), 
-                            avg_valor=Avg('valor')
-                        )
+                    else:   
+                        queryset_raw = Medicao.objects.filter(
+                        serie=selected_serie,
+                        timestamp__year=year_to_process
+                        ).order_by('timestamp')
+
+                        yearly_data = queryset_raw.aggregate(
+                        count=Count('id'),
+                        avg_valor=Avg('valor')
+                            )
+
+                        volume_data=calculate_volume(queryset_raw,False)
 
                         if yearly_data['count']:
                             years = [year_to_process]
                             counts = [yearly_data['count']]
-                            totals = [yearly_data['total_valor'] or 0]
+                            totals = [round(sum(volume_data.get(year_to_process, {}).values()),2)]
                             avg_values = [round(yearly_data['avg_valor'] or 0, 2)]
                     
                     all_years.update(years)
@@ -607,18 +677,24 @@ def dashboard(request):
                         ).annotate(
                             month=ExtractMonth('timestamp')
                         ).values('month').annotate(
-                            total_valor=Sum('valor'), 
+                            
                             count=Count('id'), 
                             avg_valor=Avg('valor')
                         ).order_by('month')
 
+                        queryset_raw = Medicao.objects.filter(
+                        serie=selected_serie,
+                        timestamp__year=year_to_process
+                        ).order_by('timestamp')
+
+                        volume_data=calculate_volume(queryset_raw,False)
                         monthly_lookup = {entry['month']: entry for entry in monthly_data}
                         for m in range(1, 13):
                             month_labels.append(m)
                             if m in monthly_lookup:
                                 entry = monthly_lookup[m]
                                 month_counts.append(entry['count'])
-                                month_totals.append(entry['total_valor'])
+                                month_totals.append(round(volume_data[year_to_process][m],2))
                                 month_avg.append(round(entry['avg_valor'], 2))
                             else:
                                 month_counts.append(0)
@@ -627,12 +703,47 @@ def dashboard(request):
                 
                 elif data_type == 'normalized':
                     
+                    volume_data={}
+
+                    dadosRaw = Medicao.objects.filter(serie=selected_serie, timestamp__year=year_to_process)
+                    df = pd.DataFrame(list(dadosRaw.values('timestamp', 'valor')))
+                        
+                    dados_guardados = MedicaoProcessada.objects.filter(
+                        serie=selected_serie,
+                        metodo='normalized',
+                        timestamp__year=year_to_process
+                        ).order_by('timestamp')                    
+
+                    if dados_guardados.exists():
+                        df = pd.DataFrame(list(dados_guardados.values('timestamp', 'valor')))
+                        df.set_index('timestamp', inplace=True)
+                        resampled_df = df 
+                    else:
+                        if not df.empty:
+                            df['timestamp'] = pd.to_datetime(df['timestamp'])
+                            df.set_index('timestamp', inplace=True)
+                            df.index = df.index.tz_localize(None)
+                            resampled_df = df.resample('15T').asfreq()
+                        
+                            year_end = df.index.max().year
+                            month_end = df.index.max().month
+                            last_day = calendar.monthrange(year_end, month_end)[1]
+
+                            start_date = pd.Timestamp(f"{df.index.min().year}-{df.index.min().month}-01")
+                            end_date = pd.Timestamp(f"{year_end}-{month_end}-{last_day} 23:45:00")
+                            full_range = pd.date_range(start=start_date, end=end_date, freq='15T')
+                            resampled_df = df.resample('15T').asfreq()
+                            resampled_df = resampled_df.reindex(full_range)
+                            normalize(df,resampled_df, 15)
+                            guardaProcessados(resampled_df['valor'].items(),'normalized',selected_serie)
+
                     estatisticas_anuais = EstatisticaAnual.objects.filter(
                         serie=selected_serie,
                         metodo=data_type,
                         ano=year_to_process
                     )
 
+                    
                     if estatisticas_anuais.exists():
                         for e in estatisticas_anuais:
                             years.append(e.ano)
@@ -640,56 +751,20 @@ def dashboard(request):
                             counts.append(e.contagem)
                             avg_values.append(e.media)
                     else:
-                        
-                        dadosRaw = Medicao.objects.filter(serie=selected_serie, timestamp__year=year_to_process)
-                        df = pd.DataFrame(list(dadosRaw.values('timestamp', 'valor')))
-                        
-                        if not df.empty:
-                            
-                            dados_guardados = MedicaoProcessada.objects.filter(
-                                serie=selected_serie,
-                                metodo='normalized',
-                                timestamp__year=year_to_process
-                            ).order_by('timestamp')
-
-                            if dados_guardados.exists():
-                                df = pd.DataFrame(list(dados_guardados.values('timestamp', 'valor')))
-                                df.set_index('timestamp', inplace=True)
-                                resampled_df = df 
-                            else:
-                                df['timestamp'] = pd.to_datetime(df['timestamp'])
-                                df.set_index('timestamp', inplace=True)
-                                df.index = df.index.tz_localize(None)
-                                resampled_df = df.resample('15T').asfreq()
+                        yearly_normalized = resampled_df.groupby(resampled_df.index.year).agg(
                                 
-                                year_end = df.index.max().year
-                                month_end = df.index.max().month
-                                last_day = calendar.monthrange(year_end, month_end)[1]
-
-                                start_date = pd.Timestamp(f"{df.index.min().year}-{df.index.min().month}-01")
-                                end_date = pd.Timestamp(f"{year_end}-{month_end}-{last_day} 23:45:00")
-                                full_range = pd.date_range(start=start_date, end=end_date, freq='15T')
-                                resampled_df = df.resample('15T').asfreq()
-                                resampled_df = resampled_df.reindex(full_range)
-                                normalize(df, resampled_df, 15)
-                                guardaProcessados(resampled_df['valor'].items(), 'normalized', selected_serie)
-
-                            
-                            yearly_normalized = resampled_df.groupby(resampled_df.index.year).agg(
-                                total_valor=('valor', 'sum'),
                                 count=('valor', 'count'),
                                 avg_valor=('valor', 'mean')
                             )
+                        volume_data=calculate_volume(resampled_df,True)
 
-                            if not yearly_normalized.empty:
-                                years = [year_to_process]
-                                totals = [yearly_normalized['total_valor'].iloc[0]]
-                                counts = [yearly_normalized['count'].iloc[0]]
-                                avg_values = [round(yearly_normalized['avg_valor'].iloc[0], 2)]
-                    
+                        if not yearly_normalized.empty:
+                            years = [year_to_process]
+                            totals = [round(sum(volume_data.get(year_to_process, {}).values()),2)]
+                            counts = [yearly_normalized['count'].iloc[0]]
+                            avg_values = [round(yearly_normalized['avg_valor'].iloc[0], 2)]
+                           
                     all_years.update(years)
-                    
-                    
                     estatisticas_mensais = EstatisticaMensal.objects.filter(
                         serie=selected_serie,
                         ano=year_to_process,
@@ -710,7 +785,8 @@ def dashboard(request):
                                 month_totals.append(0)
                                 month_avg.append(0)
                     else:
-                        
+                        ##
+                        volume_data=calculate_volume(resampled_df,True)
                         dados_processados = MedicaoProcessada.objects.filter(
                             serie=selected_serie,
                             metodo='normalized',
@@ -718,7 +794,7 @@ def dashboard(request):
                         ).annotate(
                             month=ExtractMonth('timestamp')
                         ).values('month').annotate(
-                            total_valor=Sum('valor'), 
+                             
                             count=Count('id'), 
                             avg_valor=Avg('valor')
                         ).order_by('month')
@@ -729,7 +805,7 @@ def dashboard(request):
                             if m in monthly_lookup:
                                 entry = monthly_lookup[m]
                                 month_counts.append(entry['count'])
-                                month_totals.append(entry['total_valor'])
+                                month_totals.append(round(volume_data[year_to_process][m],2))
                                 month_avg.append(round(entry['avg_valor'], 2))
                             else:
                                 month_counts.append(0)
@@ -737,7 +813,70 @@ def dashboard(request):
                                 month_avg.append(0)
 
                 elif data_type == 'reconstruido':
+                    with localconverter(default_converter + pandas2ri.converter):
+                        robjects.r.source(R_SCRIPT_PATH)
+
+                    volume_data={}
+                    dados_raw = Medicao.objects.filter(serie=selected_serie, timestamp__year=year_to_process)
+                    df = pd.DataFrame(list(dados_raw.values('timestamp', 'valor')))
+
+                        
+                    dados_guardados = MedicaoProcessada.objects.filter(
+                            serie=selected_serie,
+                            metodo=recon_method,
+                            timestamp__year=year_to_process
+                        ).order_by('timestamp')
+
+
+                    if dados_guardados.exists():
+                        df = pd.DataFrame(list(dados_guardados.values('timestamp', 'valor')))
+                        df.set_index('timestamp', inplace=True)
+                        resampled_df = df
+                        
+                    else:
+                        if not df.empty:
+                            df['timestamp'] = pd.to_datetime(df['timestamp'])
+                            df.set_index('timestamp', inplace=True)
+                            df.index = df.index.tz_localize(None)
+                            resampled_df = df.resample('15T').asfreq()
+                            year_end = df.index.max().year
+                            month_end = df.index.max().month
+                            last_day = calendar.monthrange(year_end, month_end)[1]
+
+                            start_date = pd.Timestamp(f"{df.index.min().year}-{df.index.min().month}-01")
+                            end_date = pd.Timestamp(f"{year_end}-{month_end}-{last_day} 23:45:00")
+                            full_range = pd.date_range(start=start_date, end=end_date, freq='15T')
+                            resampled_df = df.resample('15T').asfreq()
+                            resampled_df = resampled_df.reindex(full_range)
+                            resampled_df.index.name = 'Date'
+                            normalize(df,resampled_df, 15)
+                            resampled_df['Date'] = resampled_df.index.strftime('%Y/%m/%d')
+                            resampled_df['Time'] = resampled_df.index.strftime('%H:%M')
                     
+                            matrix_df = resampled_df.pivot(index='Date', columns='Time', values='valor')
+                            matrix_df.reset_index()
+                    
+                            matrix_df.columns.name = None
+                            matrix_pronta =matrix_df.reset_index()
+                            with localconverter(default_converter + pandas2ri.converter):
+                                robjects.globalenv['matrix_pronta'] = pandas2ri.py2rpy(matrix_pronta)
+
+                            reconstructed_values_list=[]
+                            if recon_method == 'jq':
+                                JQ_function = robjects.globalenv['JQ.function']
+                                reconstructedValues = JQ_function()
+                                reconstructed_values_list = reconstructedValues.tolist()
+
+                            else:
+                                TBATS_function = robjects.globalenv['TBATS.function']
+                                reconstructedValues = TBATS_function()
+                                reconstructed_values_list = reconstructedValues.tolist()
+                     
+                    
+                            resampled_df['valor']=reconstructed_values_list
+                            guardaProcessados(resampled_df['valor'].items(),recon_method,selected_serie)
+                
+                    # Tenta carregar estatísticas do banco
                     estatisticas_anuais = EstatisticaAnual.objects.filter(
                         serie=selected_serie,
                         metodo=recon_method,
@@ -751,81 +890,20 @@ def dashboard(request):
                             counts.append(e.contagem)
                             avg_values.append(e.media)
                     else:
-                        
-                        with localconverter(default_converter + pandas2ri.converter):
-                            robjects.r.source(R_SCRIPT_PATH)
-                        
-                        dados_raw = Medicao.objects.filter(serie=selected_serie, timestamp__year=year_to_process)
-                        df = pd.DataFrame(list(dados_raw.values('timestamp', 'valor')))
-
-                        
-                        dados_guardados = MedicaoProcessada.objects.filter(
-                            serie=selected_serie,
-                            metodo=recon_method,
-                            timestamp__year=year_to_process
-                        ).order_by('timestamp')
-
-                        if dados_guardados.exists():
-                            df = pd.DataFrame(list(dados_guardados.values('timestamp', 'valor')))
-                            df.set_index('timestamp', inplace=True)
-                            resampled_df = df
-                        else:
-                            if not df.empty:
-                                df['timestamp'] = pd.to_datetime(df['timestamp'])
-                                df.set_index('timestamp', inplace=True)
-                                df.index = df.index.tz_localize(None)
-                                resampled_df = df.resample('15T').asfreq()
-                                year_end = df.index.max().year
-                                month_end = df.index.max().month
-                                last_day = calendar.monthrange(year_end, month_end)[1]
-
-                                start_date = pd.Timestamp(f"{df.index.min().year}-{df.index.min().month}-01")
-                                end_date = pd.Timestamp(f"{year_end}-{month_end}-{last_day} 23:45:00")
-                                full_range = pd.date_range(start=start_date, end=end_date, freq='15T')
-                                resampled_df = df.resample('15T').asfreq()
-                                resampled_df = resampled_df.reindex(full_range)
-                                resampled_df.index.name = 'Date'
-                                normalize(df, resampled_df, 15)
-                                resampled_df['Date'] = resampled_df.index.strftime('%Y/%m/%d')
-                                resampled_df['Time'] = resampled_df.index.strftime('%H:%M')
-                            
-                                matrix_df = resampled_df.pivot(index='Date', columns='Time', values='valor')
-                                matrix_df.reset_index()
-                            
-                                matrix_df.columns.name = None
-                                matrix_pronta = matrix_df.reset_index()
-                                with localconverter(default_converter + pandas2ri.converter):
-                                    robjects.globalenv['matrix_pronta'] = pandas2ri.py2rpy(matrix_pronta)
-
-                                reconstructed_values_list = []
-                                if recon_method == 'jq':
-                                    JQ_function = robjects.globalenv['JQ.function']
-                                    reconstructedValues = JQ_function()
-                                    reconstructed_values_list = reconstructedValues.tolist()
-                                else:
-                                    TBATS_function = robjects.globalenv['TBATS.function']
-                                    reconstructedValues = TBATS_function()
-                                    reconstructed_values_list = reconstructedValues.tolist()
-                            
-                                resampled_df['valor'] = reconstructed_values_list
-                                guardaProcessados(resampled_df['valor'].items(), recon_method, selected_serie)
-
-                        
                         yearly_reconstructed = resampled_df.groupby(resampled_df.index.year).agg(
-                            total_valor=('valor', 'sum'),
+                            
                             count=('valor', 'count'),
                             avg_valor=('valor', 'mean')
                         )
+                        volume_data=calculate_volume(resampled_df,True)
 
                         if not yearly_reconstructed.empty:
                             years = [year_to_process]
-                            totals = [yearly_reconstructed['total_valor'].iloc[0]]
+                            totals = [round(sum(volume_data.get(year_to_process, {}).values()),2)]
                             counts = [yearly_reconstructed['count'].iloc[0]]
                             avg_values = [round(yearly_reconstructed['avg_valor'].iloc[0], 2)]
                     
                     all_years.update(years)
-                    
-                    
                     estatisticas_mensais = EstatisticaMensal.objects.filter(
                         serie=selected_serie,
                         ano=year_to_process,
@@ -854,24 +932,27 @@ def dashboard(request):
                         ).annotate(
                             month=ExtractMonth('timestamp')
                         ).values('month').annotate(
-                            total_valor=Sum('valor'), 
+                          
                             count=Count('id'), 
                             avg_valor=Avg('valor')
                         ).order_by('month')
 
+                        volume_data=calculate_volume(resampled_df,True)
                         monthly_lookup = {entry['month']: entry for entry in dados_processados}
                         for m in range(1, 13):
                             month_labels.append(m)
                             if m in monthly_lookup:
                                 entry = monthly_lookup[m]
                                 month_counts.append(entry['count'])
-                                month_totals.append(entry['total_valor'])
+                                month_totals.append(round(volume_data[year_to_process][m],2))
                                 month_avg.append(round(entry['avg_valor'], 2))
                             else:
                                 month_counts.append(0)
                                 month_totals.append(0)
                                 month_avg.append(0)
 
+                
+                    
                 
                 serie_year_key = f"{selected_serie.id}_{year_to_process}"
                 
@@ -900,6 +981,7 @@ def dashboard(request):
 
             
             if data_type == 'raw':
+                volume_data={}
                 # Tenta carregar estatísticas do banco
                 estatisticas_anuais = EstatisticaAnual.objects.filter(
                 serie=selected_serie,
@@ -912,16 +994,20 @@ def dashboard(request):
                         totals.append(e.total)
                         counts.append(e.contagem)
                         avg_values.append(e.media)
-                else:       
-                    yearly_data = Medicao.objects.filter(serie=selected_serie).annotate(
+                else:  
+                    medicoes = Medicao.objects.filter(serie=selected_serie).order_by('timestamp')
+
+                    yearly_data =medicoes.annotate(
                     year=ExtractYear('timestamp')
                     ).values('year').annotate(
-                    total_valor=Sum('valor'), count=Count('id'), avg_valor=Avg('valor')
+                     count=Count('id'), avg_valor=Avg('valor')
                     ).order_by('year')
+
+                    volume_data=calculate_volume(medicoes,False)
 
                     years = [entry['year'] for entry in yearly_data]
                     counts = [entry['count'] for entry in yearly_data]
-                    totals = [entry['total_valor'] for entry in yearly_data]
+                    totals = [round(sum(volume_data.get(year, {}).values()),2) for year in years]
                     avg_values = [round(entry['avg_valor'], 2) for entry in yearly_data]
                     guardaEstatisticaAnual(zip(years, totals, counts, avg_values),data_type,selected_serie)
                 
@@ -963,14 +1049,15 @@ def dashboard(request):
                         ).values('month').annotate(
                             total_valor=Sum('valor'), count=Count('id'), avg_valor=Avg('valor')
                         ).order_by('month')
-
+                        medicoes = Medicao.objects.filter(serie=selected_serie).order_by('timestamp')
+                        volume_data=calculate_volume(medicoes,False)
                         monthly_lookup = {entry['month']: entry for entry in monthly_data}
                         for m in range(1, 13):
                             month_labels.append(m)
                             if m in monthly_lookup:
                                 entry = monthly_lookup[m]
                                 month_counts.append(entry['count'])
-                                month_totals.append(entry['total_valor'])
+                                month_totals.append(round(volume_data[year_for_monthly][m],2))
                                 month_avg.append(round(entry['avg_valor'], 2))
                             else:
                                 month_counts.append(0)
@@ -978,6 +1065,7 @@ def dashboard(request):
                                 month_avg.append(0)
 
             elif data_type == 'normalized':
+                volume_data={}
                 dadosRaw = Medicao.objects.filter(serie=selected_serie)
                 df = pd.DataFrame(list(dadosRaw.values('timestamp', 'valor')))
                 dados_guardados = MedicaoProcessada.objects.filter(
@@ -1023,12 +1111,13 @@ def dashboard(request):
                 else:
 
                     yearly_normalized = resampled_df.groupby(resampled_df.index.year).agg(
-                    total_valor=('valor', 'sum'),
+                    
                     count=('valor', 'count'),
                     avg_valor=('valor', 'mean'))
+                    volume_data=calculate_volume(resampled_df,True)
 
                     years = yearly_normalized.index.tolist()
-                    totals = yearly_normalized['total_valor'].tolist()
+                    totals = [round(sum(volume_data.get(year, {}).values()),2) for year in years]
                     counts = yearly_normalized['count'].tolist()
                     avg_values = [round(x, 2) for x in yearly_normalized['avg_valor'].tolist()]
                     guardaEstatisticaAnual(zip(years, totals, counts, avg_values),data_type,selected_serie)
@@ -1065,26 +1154,30 @@ def dashboard(request):
                                 month_avg.append(0)
                     else:
                         if year_for_monthly:
+                            volume_data=calculate_volume(resampled_df,True)
                             resampled_df_selected_year = resampled_df[resampled_df.index.year == year_for_monthly]
                             monthly_normalized = resampled_df_selected_year.groupby(resampled_df_selected_year.index.month).agg(
                                 count=('valor', 'count'),
-                                total_valor=('valor', 'sum'),
+                        
                                 avg_valor=('valor', 'mean')
                             ).reindex(range(1, 13), fill_value=0)
+                            volume_data=calculate_volume(resampled_df,True)
+
+                            month_labels = [i for i in range(1, 13)]
 
                             month_counts = [int(x) if pd.notnull(x) and not math.isnan(x) else 0
                                            for x in monthly_normalized['count'].tolist()
                                            ]
 
-                            month_totals = [float(x) if pd.notnull(x) and not math.isnan(x) else 0.0
-                                            for x in monthly_normalized['total_valor'].tolist()
+                            month_totals = [round(volume_data[year_for_monthly][m],2)
+                                            for m in month_labels
                                             ]
 
                             month_avg = [round(x, 2) if pd.notnull(x) and not math.isnan(x) else 0.0
                                          for x in monthly_normalized['avg_valor'].tolist()
                                         ]
 
-                            month_labels = [i for i in range(1, 13)]
+                            
                             
                             if year_for_monthly:
                                 serie_data_monthly = MedicaoProcessada.objects.filter(
@@ -1134,15 +1227,15 @@ def dashboard(request):
             elif data_type == 'reconstruido':
                 with localconverter(default_converter + pandas2ri.converter):
                     robjects.r.source(R_SCRIPT_PATH)
-                
+                volume_data={}
                 dados_raw = Medicao.objects.filter(serie=selected_serie)
                 df = pd.DataFrame(list(dados_raw.values('timestamp', 'valor')))
-
+                
                 dados_guardados = MedicaoProcessada.objects.filter(serie=selected_serie,
                 metodo=recon_method
                  ).order_by('timestamp')
-
-                if dados_guardados.exists():
+                
+                if dados_guardados.exists() :
                     df = pd.DataFrame(list(dados_guardados.values('timestamp', 'valor')))
                     df.set_index('timestamp', inplace=True)
                     resampled_df = df
@@ -1205,13 +1298,14 @@ def dashboard(request):
                 else:       
                     
                     yearly_reconstructed = resampled_df.groupby(resampled_df.index.year).agg(
-                        total_valor=('valor', 'sum'),
+                        
                         count=('valor', 'count'),
                         avg_valor=('valor', 'mean')
                         )
+                    volume_data=calculate_volume(resampled_df,True)
 
                     years = yearly_reconstructed.index.tolist()
-                    totals = yearly_reconstructed['total_valor'].tolist()
+                    totals = [round(sum(volume_data.get(year, {}).values()),2) for year in years]
                     counts = yearly_reconstructed['count'].tolist()
                     avg_values = [round(x, 2) for x in yearly_reconstructed['avg_valor'].tolist()]
                     guardaEstatisticaAnual(zip(years, totals, counts, avg_values),recon_method,selected_serie)
@@ -1248,25 +1342,28 @@ def dashboard(request):
                                 month_avg.append(0)
                     else:
                         if year_for_monthly:
+                            volume_data=calculate_volume(resampled_df,True)
                             resampled_df_selected_year = resampled_df[resampled_df.index.year == year_for_monthly]
                             monthly_reconstructed = resampled_df_selected_year.groupby(resampled_df_selected_year.index.month).agg(
                                 count=('valor', 'count'),
-                                total_valor=('valor', 'sum'),
+                                
                                 avg_valor=('valor', 'mean')
                                 ).reindex(range(1, 13), fill_value=0)
+                            
+                            month_labels = [i for i in range(1, 13)]
 
                             month_counts = [int(x) if pd.notnull(x) and not math.isnan(x) else 0
                                            for x in monthly_reconstructed['count'].tolist()
                                            ]
 
-                            month_totals = [float(x) if pd.notnull(x) and not math.isnan(x) else 0.0
-                                            for x in monthly_reconstructed['total_valor'].tolist()
+                            month_totals = [round(volume_data[year_for_monthly][m],2)
+                                            for m in month_labels
                                             ]
 
                             month_avg = [round(x, 2) if pd.notnull(x) and not math.isnan(x) else 0.0
                                          for x in monthly_reconstructed['avg_valor'].tolist()
                                         ]
-                            month_labels = [i for i in range(1, 13)]
+                            
                             
                             if year_for_monthly:
                                 serie_data_monthly = MedicaoProcessada.objects.filter(
@@ -2135,9 +2232,9 @@ def exportar_pdf(request):
                         ['Estatística', 'Valor'],
                         ['Total Anual (m³)', f"{annual_data['total']:.2f}" if annual_data['total'] else "0.00"],
                         ['Contagem', str(annual_data['count'] or 0)],
-                        ['Média (m³/s)', f"{annual_data['avg']:.3f}" if annual_data['avg'] else "0.000"],
-                        ['Mínimo (m³/s)', f"{annual_data['min_val']:.3f}" if annual_data['min_val'] else "0.000"],
-                        ['Máximo (m³/s)', f"{annual_data['max_val']:.3f}" if annual_data['max_val'] else "0.000"],
+                        ['Média (m³/h)', f"{annual_data['avg']:.3f}" if annual_data['avg'] else "0.000"],
+                        ['Mínimo (m³/h)', f"{annual_data['min_val']:.3f}" if annual_data['min_val'] else "0.000"],
+                        ['Máximo (m³/h)', f"{annual_data['max_val']:.3f}" if annual_data['max_val'] else "0.000"],
                     ]
                     
                     annual_table = Table(annual_table_data, colWidths=[3*inch, 2*inch])
@@ -2175,7 +2272,7 @@ def exportar_pdf(request):
                     month_names = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
                                  'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
                     
-                    monthly_table_data = [['Mês', 'Total (m³)', 'Contagem', 'Média (m³/s)']]
+                    monthly_table_data = [['Mês', 'Total (m³)', 'Contagem', 'Média (m³/h)']]
                     monthly_lookup = {entry['month']: entry for entry in monthly_data}
                     
                     for m in range(1, 13):
@@ -2221,7 +2318,7 @@ def exportar_pdf(request):
                                                          year, True)
                     
                     if boxplot_stats:
-                        boxplot_table_data = [['Mês', 'Min (m³/s)', 'Q1 (m³/s)', 'Mediana (m³/s)', 'Média (m³/s)', 'Q3 (m³/s)', 'Max (m³/s)', 'IQR (m³/s)']]
+                        boxplot_table_data = [['Mês', 'Min (m³/h)', 'Q1 (m³/h)', 'Mediana (m³/h)', 'Média (m³/h)', 'Q3 (m³/h)', 'Max (m³/h)', 'IQR (m³/h)']]
                         
                         for month_num in range(1, 13):
                             month_name = month_names[month_num-1]

@@ -35,6 +35,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -95,6 +96,10 @@ USE_TZ = True
 
 # Static files
 STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
@@ -105,3 +110,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MAILGUN_API_KEY = os.environ.get('MAILGUN_API_KEY', '')
 MAILGUN_DOMAIN = os.environ.get('MAILGUN_DOMAIN', '')
 DATA_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024 
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"

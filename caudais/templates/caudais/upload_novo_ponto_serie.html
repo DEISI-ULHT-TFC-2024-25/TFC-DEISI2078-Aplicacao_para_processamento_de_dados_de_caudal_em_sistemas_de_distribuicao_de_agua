@@ -113,6 +113,9 @@
             border-radius: 5px;
             white-space: nowrap;
         }
+         .radio-tag{
+            margin-right:20dvb;
+        }
 
         .radio-text {
             font-size: 16px;
@@ -193,11 +196,12 @@
         {% csrf_token %}
 
         <h2>Modo de Carregamento</h2>
-        <div class="radio-group">
+         <div class="radio-group">
             {% for radio in selection_form.modo %}
                 <label class="radio-option">
-                    <span class="radio-text">{{ radio.choice_label }}</span>
-                    {{ radio.tag }}
+                    
+                    <div class="radio-text">{{ radio.choice_label }}</div>
+                    <div class="radio-tag">{{ radio.tag }}</div>
                 </label>
             {% endfor %}
         </div>
